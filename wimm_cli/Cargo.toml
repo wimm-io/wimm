@@ -1,0 +1,21 @@
+[package]
+name = "wimm_cli"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "wimm"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.98"
+clap = { version = "4.5.39", features = ["cargo"] }
+config = { version = "0.15.11", features = ["toml"] }
+directories = "6.0.0"
+env_logger = "0.11.8"
+log = "0.4.27"
+wimm_core = { path = "../wimm_core" }
+
+[dev-dependencies]
+assert_cmd = "2.0.17"
+pretty_assertions = "1.4.1"

@@ -1,0 +1,3 @@
+[workspace]
+members = ["wimm_cli", "wimm_core"]
+resolver = "3"
