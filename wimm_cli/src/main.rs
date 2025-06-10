@@ -8,7 +8,7 @@ fn main() {
     env_logger::init();
 
     if let Err(e) = cli::get_args(env::args()).and_then(|args| {
-        App::new(args.db_path)?.run(&args.action)?;
+        App::new(args.db_path, args.force_init)?.run(&args.action)?;
         Ok(())
     }) {
         eprintln!("{e}");

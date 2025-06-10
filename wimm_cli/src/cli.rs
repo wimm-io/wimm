@@ -9,6 +9,7 @@ use wimm_core::{Action, WimmError};
 pub struct Args {
     pub action: Action,
     pub db_path: PathBuf,
+    pub force_init: bool,
 }
 
 static PROJECT_DIRS: OnceLock<Option<ProjectDirs>> = OnceLock::new();
@@ -30,6 +31,7 @@ where
 {
     let matches = command!()
         .arg(arg!(--db <DB_PATH> "Path to the database file"))
+        .arg(arg!(--force "Force initialization, overwriting existing database"))
         .subcommand_required(true)
         .subcommand(
             Command::new("add")
@@ -50,6 +52,17 @@ where
                 .arg(arg!(<ID> "ID of the task")),
         )
         .subcommand(Command::new("list").alias("ls").about("list all tasks"))
+        .subcommand(
+            Command::new("init")
+                .about("initialize the database")
+                .arg(arg!(-f --force "Force initialization, overwriting existing database")),
+        )
+        .subcommand(
+            Command::new("complete")
+                .alias("c")
+                .about("complete a task")
+                .arg(arg!(<ID> "ID of the task")),
+        )
         .get_matches_from(args);
 
     let action = match matches.subcommand() {
@@ -72,10 +85,19 @@ where
             Action::Delete(task_id.clone())
         }
         Some(("list", _)) => Action::List,
+        Some(("complete", sub_matches)) => {
+            let task_id = sub_matches
+                .get_one::<String>("ID")
+                .expect("ID argument is required");
+            Action::Complete(task_id.clone())
+        }
         _ => {
             panic!("No valid subcommand provided.");
         }
     };
+
+    let force_init = matches.get_flag("force");
+    debug!("Forcing re-init of the database");
 
     let db_path = matches
         .get_one::<PathBuf>("db")
@@ -85,5 +107,9 @@ where
 
     debug!("Using database path: {}", db_path.display());
 
-    Ok(Args { action, db_path })
+    Ok(Args {
+        action,
+        db_path,
+        force_init,
+    })
 }

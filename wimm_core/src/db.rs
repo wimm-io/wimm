@@ -1,11 +1,8 @@
-use std::{fs, path::PathBuf, sync::OnceLock};
+use std::{fs, path::Path, sync::OnceLock};
 
-use crate::{
-    error::WimmError,
-    model::{Status, Task},
-};
+use crate::{error::WimmError, model::Task};
+use log::debug;
 use native_db::{Builder, Database, Models, db_type, transaction::RwTransaction};
-use uuid::Uuid;
 
 static MODELS: OnceLock<Models> = OnceLock::new();
 
@@ -19,27 +16,33 @@ fn get_models() -> &'static Models {
     })
 }
 
-pub struct Config {
-    pub path: PathBuf,
-}
-
 pub struct Db<'a> {
     inner: Database<'a>,
 }
 
 impl<'a> Db<'a> {
-    pub fn create(config: &Config) -> Result<Db<'a>, WimmError> {
-        let data_dir = config.path.parent().ok_or_else(|| {
-            WimmError::DbError(format!("Invalid DB path: {}", &config.path.display()))
-        })?;
+    pub fn create(path: &Path, truncate_db: bool) -> Result<Db<'a>, WimmError> {
+        let data_dir = path
+            .parent()
+            .ok_or_else(|| WimmError::DbError(format!("Invalid DB path: {}", path.display())))?;
+        debug!("data_dir: {}", data_dir.display());
+
         if !data_dir.exists() {
+            debug!("Creating data_dir: {}", data_dir.display());
             fs::create_dir_all(data_dir).map_err(|io_error| {
                 WimmError::DbError(format!("Failed to create DB path: {io_error}"))
             })?;
         }
 
+        if truncate_db {
+            debug!("Truncating database at: {}", path.display());
+            fs::remove_file(path).map_err(|io_error| {
+                WimmError::DbError(format!("Failed to truncate DB path: {io_error}"))
+            })?;
+        }
+
         Ok(Db {
-            inner: Builder::new().create(&get_models(), &config.path)?,
+            inner: Builder::new().create(&get_models(), &path)?,
         })
     }
 
@@ -57,30 +60,27 @@ impl<'a> Db<'a> {
         Ok(tasks)
     }
 
-    pub fn create_task(&self, name: &str) -> Result<Task, WimmError> {
-        let task = Task {
-            id: Uuid::new_v4().to_string(),
-            name: String::from(name),
-            status: Status::NotStarted,
-        };
-
+    pub fn insert_task(&self, task: &Task) -> Result<(), WimmError> {
+        debug!("insert_task(task: {task:?})");
         let t = self.inner.rw_transaction()?;
         t.insert(task.clone())?;
         t.commit()?;
 
-        Ok(task)
+        Ok(())
     }
 
-    pub fn start_task(&self, id: &str) -> Result<(), WimmError> {
+    pub fn update_task<F>(&self, id: &str, task_updater: F) -> Result<(), WimmError>
+    where
+        F: FnOnce(&Task) -> Option<Task>,
+    {
         let t = self.inner.rw_transaction()?;
         let task: Task = get_task(id, &t)?;
-        let update = Task {
-            status: Status::InProgress,
-            ..task.clone()
-        };
-        t.update(task, update)?;
-        t.commit()?;
-
+        debug!("Found task: {task:?}");
+        if let Some(updated_task) = task_updater(&task) {
+            debug!("Updating task to: {updated_task:?}");
+            t.update(task, updated_task)?;
+            t.commit()?;
+        }
         Ok(())
     }
 }

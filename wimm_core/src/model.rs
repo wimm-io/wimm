@@ -8,14 +8,16 @@ pub type Task = v1::Task;
 pub type Status = v1::Status;
 
 pub mod v1 {
+
     use super::*;
 
-    #[derive(Debug, Serialize, Deserialize, Clone)]
+    #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
     pub enum Status {
-        NotStarted,
-        InProgress,
-        Completed,
-        Dropped,
+        Pending,
+        InProgress(u64),
+        Completed(u64),
+        Deferred(u64),
+        Dropped(u64),
     }
 
     #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -24,20 +26,10 @@ pub mod v1 {
     pub struct Task {
         #[primary_key]
         pub id: String,
-        #[secondary_key]
         pub name: String,
         pub status: Status,
-    }
-}
-
-impl Display for Status {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match self {
-            Status::NotStarted => write!(f, "Not Started"),
-            Status::InProgress => write!(f, "In Progress"),
-            Status::Completed => write!(f, "Completed"),
-            Status::Dropped => write!(f, "Dropped"),
-        }
+        pub created_at: u64,
+        pub time_spent: u64,
     }
 }
 
@@ -45,8 +37,20 @@ impl Display for Task {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(
             f,
-            "Task(id: {}, name: {}, status: {})",
-            self.id, self.name, self.status
+            "Task(id: {}, name: {}, status: {}, created_at: {}, time_spent: {})",
+            self.id, self.name, self.status, self.created_at, self.time_spent
         )
+    }
+}
+
+impl Display for Status {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Status::Pending => write!(f, "Pending"),
+            Status::InProgress(since) => write!(f, "In Progress since {since}"),
+            Status::Completed(at) => write!(f, "Completed at {at}"),
+            Status::Dropped(at) => write!(f, "Dropped at {at}"),
+            Status::Deferred(until) => write!(f, "Deferred until {until}"),
+        }
     }
 }
