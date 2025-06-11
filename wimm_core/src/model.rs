@@ -15,10 +15,10 @@ pub mod v1 {
     pub enum Status {
         Pending,
         InProgress(u64),
-        Completed(u64),
+        Completed,
         Deferred(u64),
-        Dropped(u64),
-        OnHold(u64),
+        Dropped,
+        OnHold,
     }
 
     #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -49,10 +49,10 @@ impl Display for Status {
         match self {
             Status::Pending => write!(f, "Pending"),
             Status::InProgress(since) => write!(f, "In Progress since {since}"),
-            Status::Completed(at) => write!(f, "Completed at {at}"),
-            Status::Dropped(at) => write!(f, "Dropped at {at}"),
+            Status::Completed => write!(f, "Completed"),
+            Status::Dropped => write!(f, "Dropped"),
             Status::Deferred(until) => write!(f, "Deferred until {until}"),
-            Status::OnHold(since) => write!(f, "On Hold since {since}"),
+            Status::OnHold => write!(f, "On Hold"),
         }
     }
 }

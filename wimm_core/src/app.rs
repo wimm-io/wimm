@@ -94,13 +94,12 @@ impl App {
 
     fn pause_task(&self, id: &str) -> Result<(), WimmError> {
         debug!("pause_task(id: {id})");
-        let pause_time = now();
         self.db.update_task(id, |task| match task.status {
             Status::InProgress(since) => {
                 debug!("Pausing task that was in progress since: {since}");
                 Some(Task {
-                    status: Status::OnHold(pause_time),
-                    time_spent: task.time_spent + (pause_time - since),
+                    status: Status::OnHold,
+                    time_spent: task.time_spent + (now() - since),
                     ..task.clone()
                 })
             }
@@ -127,22 +126,21 @@ impl App {
 
     fn complete_task(&self, id: &str) -> Result<(), WimmError> {
         debug!("complete_task(id: {id})");
-        let completed_at = now();
         self.db.update_task(id, |task| match task.status {
-            Status::Completed(_) => {
+            Status::Completed => {
                 debug!("Task is already completed, skipping update.");
                 None
             }
             Status::InProgress(since) => {
                 debug!("Completing task that was in progress since: {since}");
                 Some(Task {
-                    status: Status::Completed(completed_at),
-                    time_spent: task.time_spent + (completed_at - since),
+                    status: Status::Completed,
+                    time_spent: task.time_spent + (now() - since),
                     ..task.clone()
                 })
             }
             _ => Some(Task {
-                status: Status::Completed(completed_at),
+                status: Status::Completed,
                 ..task.clone()
             }),
         })
