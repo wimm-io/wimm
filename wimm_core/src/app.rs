@@ -21,6 +21,7 @@ pub enum Action {
     Add(String),
     Delete(String),
     Complete(String),
+    Pause(String),
 }
 
 fn now() -> u64 {
@@ -83,7 +84,31 @@ impl App {
                 println!("Completed task: {id}");
                 Ok(())
             }
+            Action::Pause(id) => {
+                self.pause_task(id)?;
+                println!("Pause task: {id}");
+                Ok(())
+            }
         }
+    }
+
+    fn pause_task(&self, id: &str) -> Result<(), WimmError> {
+        debug!("pause_task(id: {id})");
+        let pause_time = now();
+        self.db.update_task(id, |task| match task.status {
+            Status::InProgress(since) => {
+                debug!("Pausing task that was in progress since: {since}");
+                Some(Task {
+                    status: Status::OnHold(pause_time),
+                    time_spent: task.time_spent + (pause_time - since),
+                    ..task.clone()
+                })
+            }
+            _ => {
+                debug!("Task is not in progress, skipping pause.");
+                None
+            }
+        })
     }
 
     fn start_task(&self, id: &str) -> Result<(), WimmError> {

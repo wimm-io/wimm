@@ -63,6 +63,12 @@ where
                 .about("complete a task")
                 .arg(arg!(<ID> "ID of the task")),
         )
+        .subcommand(
+            Command::new("pause")
+                .alias("p")
+                .about("pause a task")
+                .arg(arg!(<ID> "ID of the task")),
+        )
         .get_matches_from(args);
 
     let action = match matches.subcommand() {
@@ -91,13 +97,18 @@ where
                 .expect("ID argument is required");
             Action::Complete(task_id.clone())
         }
+        Some(("pause", sub_matches)) => {
+            let task_id = sub_matches
+                .get_one::<String>("ID")
+                .expect("ID argument is required");
+            Action::Pause(task_id.clone())
+        }
         _ => {
             panic!("No valid subcommand provided.");
         }
     };
 
     let force_init = matches.get_flag("force");
-    debug!("Forcing re-init of the database");
 
     let db_path = matches
         .get_one::<PathBuf>("db")

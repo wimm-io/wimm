@@ -18,6 +18,7 @@ pub mod v1 {
         Completed(u64),
         Deferred(u64),
         Dropped(u64),
+        OnHold(u64),
     }
 
     #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -51,6 +52,7 @@ impl Display for Status {
             Status::Completed(at) => write!(f, "Completed at {at}"),
             Status::Dropped(at) => write!(f, "Dropped at {at}"),
             Status::Deferred(until) => write!(f, "Deferred until {until}"),
+            Status::OnHold(since) => write!(f, "On Hold since {since}"),
         }
     }
 }
