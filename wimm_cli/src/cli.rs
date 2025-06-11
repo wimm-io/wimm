@@ -53,11 +53,6 @@ where
         )
         .subcommand(Command::new("list").alias("ls").about("list all tasks"))
         .subcommand(
-            Command::new("init")
-                .about("initialize the database")
-                .arg(arg!(-f --force "Force initialization, overwriting existing database")),
-        )
-        .subcommand(
             Command::new("complete")
                 .alias("c")
                 .about("complete a task")

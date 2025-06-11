@@ -24,13 +24,6 @@ pub enum Action {
     Pause(String),
 }
 
-fn now() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards")
-        .as_secs()
-}
-
 pub struct App {
     db: Db<'static>,
 }
@@ -95,11 +88,11 @@ impl App {
     fn pause_task(&self, id: &str) -> Result<(), WimmError> {
         debug!("pause_task(id: {id})");
         self.db.update_task(id, |task| match task.status {
-            Status::InProgress(since) => {
-                debug!("Pausing task that was in progress since: {since}");
+            Status::InProgress(start) => {
+                debug!("Pausing task that was in progress since: {start}");
                 Some(Task {
                     status: Status::OnHold,
-                    time_spent: task.time_spent + (now() - since),
+                    time_spent: task.time_spent + since(start),
                     ..task.clone()
                 })
             }
@@ -131,11 +124,11 @@ impl App {
                 debug!("Task is already completed, skipping update.");
                 None
             }
-            Status::InProgress(since) => {
-                debug!("Completing task that was in progress since: {since}");
+            Status::InProgress(start) => {
+                debug!("Completing task that was in progress since: {start}");
                 Some(Task {
                     status: Status::Completed,
-                    time_spent: task.time_spent + (now() - since),
+                    time_spent: task.time_spent + since(start),
                     ..task.clone()
                 })
             }
@@ -155,4 +148,15 @@ fn new_task(name: &str) -> Task {
         created_at: now(),
         time_spent: 0,
     }
+}
+
+fn now() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_secs()
+}
+
+fn since(time: u64) -> u64 {
+    now() - time
 }
