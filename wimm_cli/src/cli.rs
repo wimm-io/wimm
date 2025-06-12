@@ -1,12 +1,13 @@
 use log::debug;
 use std::{ffi::OsString, path::PathBuf, sync::OnceLock};
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use clap::{Command, arg, command};
 use directories::ProjectDirs;
-use wimm_core::{Action, WimmError};
+use wimm_core::{WimmError, app::App};
 
-pub struct Args {
+#[derive(Debug)]
+struct Args {
     pub action: Action,
     pub db_path: PathBuf,
     pub force_init: bool,
@@ -24,7 +25,7 @@ fn default_db_path() -> Option<PathBuf> {
         .map(|pd| pd.data_dir().join("wimm.db"))
 }
 
-pub fn get_args<I, T>(args: I) -> Result<Args>
+fn get_args<I, T>(args: I) -> Result<Args>
 where
     I: IntoIterator<Item = T>,
     T: Into<OsString> + Clone,
@@ -66,6 +67,14 @@ where
         )
         .get_matches_from(args);
 
+    let force_init = matches.get_flag("force");
+    let db_path = matches
+        .get_one::<PathBuf>("db")
+        .cloned()
+        .or(default_db_path())
+        .ok_or(WimmError::DbError(String::from("No DB path specified")))?;
+    debug!("Using database path: {}", db_path.display());
+
     let action = match matches.subcommand() {
         Some(("add", sub_matches)) => {
             let task_name = sub_matches
@@ -98,24 +107,71 @@ where
                 .expect("ID argument is required");
             Action::Pause(task_id.clone())
         }
-        _ => {
-            panic!("No valid subcommand provided.");
-        }
+        _ => return Err(anyhow!("Subcommand required")),
     };
-
-    let force_init = matches.get_flag("force");
-
-    let db_path = matches
-        .get_one::<PathBuf>("db")
-        .cloned()
-        .or(default_db_path())
-        .ok_or(WimmError::DbError(String::from("No DB path specified")))?;
-
-    debug!("Using database path: {}", db_path.display());
 
     Ok(Args {
         action,
         db_path,
         force_init,
     })
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Action {
+    Start(String),
+    List,
+    Add(String),
+    Delete(String),
+    Complete(String),
+    Pause(String),
+}
+
+pub fn run<I, T>(args: I) -> Result<()>
+where
+    I: IntoIterator<Item = T>,
+    T: Into<OsString> + Clone,
+{
+    let args = get_args(args)?;
+    debug!("Parsed arguments: {:?}", args);
+
+    let app = App::new(args.db_path, args.force_init)?;
+    match args.action {
+        Action::Start(id) => {
+            app.start_task(&id)?;
+            println!("Started task ID: {id}");
+            Ok(())
+        }
+        Action::List => {
+            let tasks = app.get_tasks()?;
+            if tasks.is_empty() {
+                println!("No tasks found.");
+            } else {
+                for task in tasks {
+                    println!("{task}");
+                }
+            }
+            Ok(())
+        }
+        Action::Add(name) => {
+            let id = app.add_task(&name)?;
+            println!("Added task: {id}");
+            Ok(())
+        }
+        Action::Delete(id) => {
+            app.delete_task(&id)?;
+            println!("Deleted task: {id}");
+            Ok(())
+        }
+        Action::Complete(id) => {
+            app.complete_task(&id)?;
+            println!("Completed task: {id}");
+            Ok(())
+        }
+        Action::Pause(id) => {
+            app.pause_task(&id)?;
+            println!("Pause task: {id}");
+            Ok(())
+        }
+    }
 }

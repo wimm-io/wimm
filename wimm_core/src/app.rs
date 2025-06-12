@@ -12,18 +12,6 @@ use crate::{
     model::{Status, Task},
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Action {
-    Start(String),
-    Stop(String),
-    Status(String),
-    List,
-    Add(String),
-    Delete(String),
-    Complete(String),
-    Pause(String),
-}
-
 pub struct App {
     db: Db<'static>,
 }
@@ -35,57 +23,14 @@ impl App {
         })
     }
 
-    pub fn run(&self, action: &Action) -> Result<(), WimmError> {
-        match action {
-            Action::Start(id) => {
-                self.start_task(id)?;
-                println!("Started task ID: {id}");
-                Ok(())
-            }
-            Action::Stop(name) => {
-                println!("Stop: {name} not implemented yet");
-                Ok(())
-            }
-            Action::Status(name) => {
-                println!("Status: {name} not implemented yet");
-                Ok(())
-            }
-            Action::List => {
-                let tasks = self.db.get_tasks()?;
-                if tasks.is_empty() {
-                    println!("No tasks found.");
-                } else {
-                    for task in tasks {
-                        println!("{task}");
-                    }
-                }
-                Ok(())
-            }
-            Action::Add(name) => {
-                let task = new_task(name);
-                self.db.insert_task(&task)?;
-                println!("Added task: {task}");
-                Ok(())
-            }
-            Action::Delete(id) => {
-                self.db.delete_task(id)?;
-                println!("Deleted task: {id}");
-                Ok(())
-            }
-            Action::Complete(id) => {
-                self.complete_task(id)?;
-                println!("Completed task: {id}");
-                Ok(())
-            }
-            Action::Pause(id) => {
-                self.pause_task(id)?;
-                println!("Pause task: {id}");
-                Ok(())
-            }
-        }
+    pub fn add_task(&self, name: &str) -> Result<String, WimmError> {
+        debug!("add_task(name: {name})");
+        let task = new_task(name);
+        self.db.insert_task(&task)?;
+        Ok(task.id)
     }
 
-    fn pause_task(&self, id: &str) -> Result<(), WimmError> {
+    pub fn pause_task(&self, id: &str) -> Result<(), WimmError> {
         debug!("pause_task(id: {id})");
         self.db.update_task(id, |task| match task.status {
             Status::InProgress(start) => {
@@ -103,21 +48,12 @@ impl App {
         })
     }
 
-    fn start_task(&self, id: &str) -> Result<(), WimmError> {
-        debug!("start_task(id: {id})");
-        self.db.update_task(id, |task| match task.status {
-            Status::InProgress(since) => {
-                debug!("Task is already in progress since: {since}, skipping update.");
-                None
-            }
-            _ => Some(Task {
-                status: Status::InProgress(now()),
-                ..task.clone()
-            }),
-        })
+    pub fn delete_task(&self, id: &str) -> Result<(), WimmError> {
+        debug!("delete_task(id: {id})");
+        self.db.delete_task(id)
     }
 
-    fn complete_task(&self, id: &str) -> Result<(), WimmError> {
+    pub fn complete_task(&self, id: &str) -> Result<(), WimmError> {
         debug!("complete_task(id: {id})");
         self.db.update_task(id, |task| match task.status {
             Status::Completed => {
@@ -137,6 +73,25 @@ impl App {
                 ..task.clone()
             }),
         })
+    }
+
+    pub fn start_task(&self, id: &str) -> Result<(), WimmError> {
+        debug!("start_task(id: {id})");
+        self.db.update_task(id, |task| match task.status {
+            Status::InProgress(since) => {
+                debug!("Task is already in progress since: {since}, skipping update.");
+                None
+            }
+            _ => Some(Task {
+                status: Status::InProgress(now()),
+                ..task.clone()
+            }),
+        })
+    }
+
+    pub fn get_tasks(&self) -> Result<Vec<Task>, WimmError> {
+        debug!("get_tasks()");
+        self.db.get_tasks()
     }
 }
 
