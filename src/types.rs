@@ -19,13 +19,14 @@ pub struct Task {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AppState<D: Db = MemoryStorage> {
+pub struct AppState<T: Db = MemoryStorage> {
     pub mode: Mode,
     pub should_quit: bool,
     pub input_buffer: String,
     pub message: Option<String>,
+    pub show_help: bool,
     pub tasks: Vec<Task>,
-    pub store: D,
+    pub store: T,
 }
 
 impl<T: Db> AppState<T> {
@@ -40,6 +41,7 @@ impl<T: Db> AppState<T> {
                 .as_ref()
                 .err()
                 .map(|e| format!("Error loading tasks: {}", e)),
+            show_help: false,
             tasks: tasks.unwrap_or_default(),
             store,
         }
@@ -53,6 +55,7 @@ impl Default for AppState {
             should_quit: false,
             input_buffer: String::new(),
             message: None,
+            show_help: false,
             tasks: Vec::new(),
             store: MemoryStorage::new(HashMap::new()),
         }
