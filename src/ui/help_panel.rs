@@ -3,7 +3,7 @@ use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Paragraph, Wrap},
+    widgets::{Block, Borders, Clear, Paragraph, Wrap},
 };
 
 pub struct HelpPanel;
@@ -14,18 +14,26 @@ impl HelpPanel {
     }
 
     pub fn render(&self, f: &mut Frame, area: Rect) {
+        // Clear the background area to create floating effect
+        f.render_widget(Clear, area);
+
         let help_text = self.create_help_content();
 
         let help_paragraph = Paragraph::new(help_text)
             .block(
-                Block::bordered().title(" Help ").title_style(
-                    Style::default()
-                        .fg(Color::Yellow)
-                        .add_modifier(Modifier::BOLD),
-                ),
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(" Help ")
+                    .title_style(
+                        Style::default()
+                            .fg(Color::Yellow)
+                            .add_modifier(Modifier::BOLD),
+                    )
+                    .border_style(Style::default().fg(Color::Cyan))
+                    .style(Style::default().bg(Color::DarkGray)),
             )
             .wrap(Wrap { trim: true })
-            .style(Style::default().fg(Color::White));
+            .style(Style::default().fg(Color::White).bg(Color::DarkGray));
 
         f.render_widget(help_paragraph, area);
     }
@@ -34,7 +42,7 @@ impl HelpPanel {
         vec![
             Line::from(""),
             Line::from(vec![Span::styled(
-                "Normal Mode",
+                "📋 Normal Mode",
                 Style::default()
                     .fg(Color::Green)
                     .add_modifier(Modifier::BOLD),
@@ -49,7 +57,7 @@ impl HelpPanel {
             Line::from("  q       - Quit"),
             Line::from(""),
             Line::from(vec![Span::styled(
-                "Insert Mode",
+                "✏️  Insert Mode",
                 Style::default()
                     .fg(Color::Blue)
                     .add_modifier(Modifier::BOLD),
@@ -61,7 +69,7 @@ impl HelpPanel {
             Line::from("  Esc     - Return to Normal"),
             Line::from(""),
             Line::from(vec![Span::styled(
-                "Tips",
+                "💡 Tips",
                 Style::default()
                     .fg(Color::Magenta)
                     .add_modifier(Modifier::BOLD),
@@ -69,7 +77,7 @@ impl HelpPanel {
             Line::from(""),
             Line::from("• Tasks auto-save to database"),
             Line::from("• Navigate with j/k like Vim"),
-            Line::from("• Press h to hide this panel"),
+            Line::from("• Press h again to close help"),
         ]
     }
 }
