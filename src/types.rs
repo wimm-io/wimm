@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
-use std::time::SystemTime;
+use std::{collections::HashMap, time::SystemTime};
+
+use crate::storage::{Db, MemoryStorage};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Mode {
     Normal,
     Insert,
-    Command,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -18,20 +19,42 @@ pub struct Task {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AppState {
+pub struct AppState<D: Db = MemoryStorage> {
     pub mode: Mode,
-    pub tasks: Vec<Task>,
-    pub selected_index: usize,
     pub should_quit: bool,
+    pub input_buffer: String,
+    pub message: Option<String>,
+    pub tasks: Vec<Task>,
+    pub store: D,
+}
+
+impl<T: Db> AppState<T> {
+    pub fn new(store: T) -> Self {
+        let tasks = store.load_tasks();
+
+        Self {
+            mode: Mode::Normal,
+            should_quit: false,
+            input_buffer: String::new(),
+            message: tasks
+                .as_ref()
+                .err()
+                .map(|e| format!("Error loading tasks: {}", e)),
+            tasks: tasks.unwrap_or_default(),
+            store,
+        }
+    }
 }
 
 impl Default for AppState {
     fn default() -> Self {
         Self {
             mode: Mode::Normal,
-            tasks: Vec::new(),
-            selected_index: 0,
             should_quit: false,
+            input_buffer: String::new(),
+            message: None,
+            tasks: Vec::new(),
+            store: MemoryStorage::new(HashMap::new()),
         }
     }
 }

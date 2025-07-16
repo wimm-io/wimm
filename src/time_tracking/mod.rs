@@ -1,7 +1,6 @@
 // Placeholder for time tracking module
 // This will be implemented in future challenges
 
-use crate::types::Task;
 use std::time::{Duration, SystemTime};
 
 pub struct TimeTracker;

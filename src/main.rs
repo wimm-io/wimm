@@ -1,37 +1,28 @@
-use std::time;
+use std::sync::OnceLock;
 
-use wimm::{
-    types::{AppState, Task},
-    ui::Ui,
-};
+use directories::ProjectDirs;
+use wimm::{storage::SledStorage, types::AppState, ui::Ui};
+
+static PROJECT_PATH: OnceLock<Option<ProjectDirs>> = OnceLock::new();
+
+fn project_path() -> Option<&'static ProjectDirs> {
+    PROJECT_PATH
+        .get_or_init(|| directories::ProjectDirs::from("io", "wimm", "wimm"))
+        .as_ref()
+}
 
 fn main() {
-    Ui::new(AppState {
-        tasks: vec![
-            Task {
-                id: "1".to_string(),
-                title: "Get Milk".to_string(),
-                created_at: time::SystemTime::now(),
-                completed: false,
-                description: "Get some milk from Safeway".to_string(),
-            },
-            Task {
-                id: "2".to_string(),
-                title: "Walk Dog".to_string(),
-                created_at: time::SystemTime::now(),
-                completed: true,
-                description: "Take Fido for a walk in the park".to_string(),
-            },
-            Task {
-                id: "3".to_string(),
-                title: "Write Code".to_string(),
-                created_at: time::SystemTime::now(),
-                completed: false,
-                description: "Work on the Wimm project".to_string(),
-            },
-        ],
-        ..Default::default()
-    })
-    .run()
-    .unwrap_or_else(|e| eprintln!("Error: {}", e));
+    let db_path = project_path().map(|pp| pp.data_dir()).unwrap_or_else(|| {
+        eprintln!("Warning: Could not determine project directory. Using current directory.");
+        std::path::Path::new(".")
+    });
+
+    let store = SledStorage::new(db_path.join("tasks.db")).unwrap_or_else(|e| {
+        eprintln!("Error initializing database at {:?}: {}", db_path, e);
+        std::process::exit(1);
+    });
+
+    Ui::new(AppState::new(store))
+        .run()
+        .unwrap_or_else(|e| eprintln!("Error: {}", e));
 }

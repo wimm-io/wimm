@@ -1,3 +1,5 @@
+use std::{collections::HashMap, path::Path};
+
 use sled::open;
 use thiserror::Error;
 
@@ -17,9 +19,9 @@ pub enum DbError {
 
 pub trait Db {
     fn load_tasks(&self) -> Result<Vec<Task>, DbError>;
-    fn save_task(&self, task: &Task) -> Result<(), DbError>;
-    fn delete_task(&self, task_id: &str) -> Result<(), DbError>;
-    fn flush(&self) -> Result<(), DbError>;
+    fn save_task(&mut self, task: &Task) -> Result<(), DbError>;
+    fn delete_task(&mut self, task_id: &str) -> Result<(), DbError>;
+    fn clear(&mut self) -> Result<(), DbError>;
 }
 
 pub struct SledStorage {
@@ -27,9 +29,42 @@ pub struct SledStorage {
 }
 
 impl SledStorage {
-    pub fn new(path: &str) -> Result<Self, DbError> {
+    pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, DbError> {
         let db = open(path).map_err(|e| DbError::ConnectionError(e.to_string()))?;
         Ok(Self { inner: db })
+    }
+}
+
+pub struct MemoryStorage {
+    tasks: HashMap<String, Task>,
+}
+
+impl MemoryStorage {
+    pub fn new(tasks: HashMap<String, Task>) -> Self {
+        Self { tasks }
+    }
+}
+
+impl Db for MemoryStorage {
+    fn load_tasks(&self) -> Result<Vec<Task>, DbError> {
+        Ok(self.tasks.values().cloned().collect())
+    }
+
+    fn save_task(&mut self, task: &Task) -> Result<(), DbError> {
+        self.tasks.insert(task.id.clone(), task.clone());
+        Ok(())
+    }
+
+    fn delete_task(&mut self, task_id: &str) -> Result<(), DbError> {
+        self.tasks
+            .remove(task_id)
+            .ok_or_else(|| DbError::NotFound(task_id.to_string()))?;
+        Ok(())
+    }
+
+    fn clear(&mut self) -> Result<(), DbError> {
+        self.tasks.clear();
+        Ok(())
     }
 }
 
@@ -48,7 +83,7 @@ impl Db for SledStorage {
             .collect::<Result<Vec<Task>, _>>()
     }
 
-    fn save_task(&self, task: &Task) -> Result<(), DbError> {
+    fn save_task(&mut self, task: &Task) -> Result<(), DbError> {
         let serialized = serde_json::to_vec(task)?;
         self.inner
             .insert(&task.id, serialized)
@@ -56,7 +91,7 @@ impl Db for SledStorage {
         Ok(())
     }
 
-    fn delete_task(&self, task_id: &str) -> Result<(), DbError> {
+    fn delete_task(&mut self, task_id: &str) -> Result<(), DbError> {
         self.inner
             .remove(task_id)
             .map_err(|e| DbError::OperationFailed(e.to_string()))?
@@ -64,9 +99,9 @@ impl Db for SledStorage {
         Ok(())
     }
 
-    fn flush(&self) -> Result<(), DbError> {
+    fn clear(&mut self) -> Result<(), DbError> {
         self.inner
-            .flush()
+            .clear()
             .map_err(|e| DbError::OperationFailed(e.to_string()))?;
         Ok(())
     }

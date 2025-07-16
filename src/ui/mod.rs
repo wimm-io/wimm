@@ -3,19 +3,23 @@ use ratatui::{
     crossterm::event::{self, Event, KeyCode, KeyEventKind},
     layout::{Alignment, Constraint, Layout, Rect},
     text::Line,
-    widgets::{Block, HighlightSpacing, List, ListItem, ListState, Paragraph},
+    widgets::{Block, HighlightSpacing, List, ListItem, ListState, Padding, Paragraph},
 };
 use thiserror::Error;
+use uuid::Uuid;
 
-use crate::types::{AppState, Mode};
+use crate::{
+    storage::{self, Db},
+    types::{AppState, Mode, Task},
+};
 
-pub struct Ui {
-    app: AppState,
+pub struct Ui<D: Db> {
+    app: AppState<D>,
     state: ListState,
 }
 
-impl Ui {
-    pub fn new(app: AppState) -> Self {
+impl<D: Db> Ui<D> {
+    pub fn new(app: AppState<D>) -> Self {
         Self {
             app,
             state: ListState::default(),
@@ -34,11 +38,12 @@ impl Ui {
     }
 
     fn draw(&mut self, f: &mut Frame) {
-        let (title_area, main_area, status_area) = self.calculate_layout(f.area());
+        let (title_area, main_area, status_area, input_area) = self.calculate_layout(f.area());
 
         self.render_title(f, title_area);
         self.render_main(f, main_area);
         self.render_status(f, status_area);
+        self.render_input(f, input_area);
     }
 
     fn render_main(&mut self, f: &mut Frame, area: Rect) {
@@ -55,27 +60,33 @@ impl Ui {
             })
             .collect::<Vec<_>>();
 
+        if !list_items.is_empty() && self.state.selected().is_none() {
+            self.state.select_first();
+        }
+
         f.render_stateful_widget(
             List::new(list_items)
                 .block(
                     Block::bordered()
+                        .padding(Padding::uniform(1))
                         .title(Line::from(format!(" Tasks ({}) ", self.app.tasks.len()))),
                 )
-                .highlight_symbol(" > ")
+                .highlight_symbol("> ")
                 .highlight_spacing(HighlightSpacing::Always),
             area,
             &mut self.state,
         );
     }
 
-    fn calculate_layout(&self, area: Rect) -> (Rect, Rect, Rect) {
+    fn calculate_layout(&self, area: Rect) -> (Rect, Rect, Rect, Rect) {
         let main_layout = Layout::vertical([
             Constraint::Length(1),
-            Constraint::Min(0),
+            Constraint::Min(1),
+            Constraint::Length(1),
             Constraint::Length(1),
         ]);
-        let [title_area, main_area, status_area] = main_layout.areas(area);
-        (title_area, main_area, status_area)
+        let [title_area, main_area, status_area, input_area] = main_layout.areas(area);
+        (title_area, main_area, status_area, input_area)
     }
 
     fn render_title(&self, f: &mut Frame, area: Rect) {
@@ -89,10 +100,15 @@ impl Ui {
         let mode = match self.app.mode {
             Mode::Normal => "NORMAL",
             Mode::Insert => "INSERT",
-            Mode::Command => "COMMAND",
         };
         let status = format!("Mode: {}", mode);
         f.render_widget(Paragraph::new(status).alignment(Alignment::Left), area);
+    }
+
+    fn render_input(&self, f: &mut Frame, area: Rect) {
+        if self.app.mode == Mode::Insert {
+            f.render_widget(Line::from(format!("> {}", &self.app.input_buffer)), area);
+        }
     }
 
     fn handle_event(&mut self, event: Event) {
@@ -101,7 +117,6 @@ impl Ui {
                 match self.app.mode {
                     Mode::Normal => self.handle_normal_key(key.code),
                     Mode::Insert => self.handle_insert_key(key.code),
-                    Mode::Command => self.handle_command_key(key.code),
                 }
             }
         }
@@ -111,7 +126,6 @@ impl Ui {
         match key {
             KeyCode::Char('q') => self.app.should_quit = true,
             KeyCode::Char('i') => self.app.mode = Mode::Insert,
-            KeyCode::Char(':') => self.app.mode = Mode::Command,
             KeyCode::Char('j') => self.state.select_next(),
             KeyCode::Char('k') => self.state.select_previous(),
             KeyCode::Char('g') => self.state.select_first(),
@@ -124,15 +138,34 @@ impl Ui {
 
     fn handle_insert_key(&mut self, key: KeyCode) {
         match key {
-            KeyCode::Esc => self.app.mode = Mode::Normal,
+            KeyCode::Esc => {
+                self.app.input_buffer.clear();
+                self.app.mode = Mode::Normal;
+            }
+            KeyCode::Backspace => {
+                self.app.input_buffer.pop();
+            }
+            KeyCode::Enter => {
+                let new_task_title = self.app.input_buffer.trim().to_string();
+                if !new_task_title.is_empty() {
+                    self.add_task(&new_task_title);
+                }
+                self.app.input_buffer.clear();
+                self.app.mode = Mode::Normal;
+            }
+            KeyCode::Char(c) => {
+                self.app.input_buffer.push(c);
+            }
             _ => {}
         }
     }
 
-    fn handle_command_key(&mut self, key: KeyCode) {
-        match key {
-            KeyCode::Esc => self.app.mode = Mode::Normal,
-            _ => {}
+    fn add_task(&mut self, title: &str) {
+        let new_task = create_task(title);
+        self.app.tasks.push(new_task);
+        self.state.select_last();
+        if let Err(e) = self.sync_to_storage() {
+            self.app.message = Some(format!("Error adding task: {}", e));
         }
     }
 
@@ -140,6 +173,9 @@ impl Ui {
         if let Some(selected) = self.state.selected() {
             if let Some(task) = self.app.tasks.get_mut(selected) {
                 task.completed = !task.completed;
+                if let Err(e) = self.sync_to_storage() {
+                    self.app.message = Some(format!("Error updating task: {}", e));
+                }
             }
         }
     }
@@ -149,8 +185,29 @@ impl Ui {
             if selected < self.app.tasks.len() {
                 self.app.tasks.remove(selected);
                 self.state.select_previous();
+                if let Err(e) = self.sync_to_storage() {
+                    self.app.message = Some(format!("Error deleting task: {}", e));
+                }
             }
         }
+    }
+
+    fn sync_to_storage(&mut self) -> Result<(), UiError> {
+        self.app.store.clear()?;
+        for task in &self.app.tasks {
+            self.app.store.save_task(task)?;
+        }
+        Ok(())
+    }
+}
+
+fn create_task(title: &str) -> Task {
+    Task {
+        id: Uuid::new_v4().to_string(),
+        title: title.to_string(),
+        description: String::new(),
+        completed: false,
+        created_at: std::time::SystemTime::now(),
     }
 }
 
@@ -158,4 +215,6 @@ impl Ui {
 pub enum UiError {
     #[error("Terminal IO error: {0}")]
     IoError(#[from] std::io::Error),
+    #[error("DB error: {0}")]
+    DbError(#[from] storage::DbError),
 }
