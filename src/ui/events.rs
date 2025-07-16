@@ -39,14 +39,14 @@ impl EventHandler {
             KeyCode::Char('x') => {
                 if let Some(selected) = task_list.selected_index() {
                     if let Err(e) = app.toggle_task_completion(selected) {
-                        app.set_error_message(format!("Error updating task: {}", e));
+                        app.set_error_message(format!("Error updating task: {e}"));
                     }
                 }
             }
             KeyCode::Char('D') => {
                 if let Some(selected) = task_list.selected_index() {
                     if let Err(e) = app.delete_task(selected) {
-                        app.set_error_message(format!("Error deleting task: {}", e));
+                        app.set_error_message(format!("Error deleting task: {e}"));
                     } else {
                         task_list.adjust_selection_after_delete();
                     }
@@ -72,7 +72,7 @@ impl EventHandler {
                 let input_text = app.state.input_buffer.trim().to_string();
                 if !input_text.is_empty() {
                     if let Err(e) = app.add_task(&input_text) {
-                        app.set_error_message(format!("Error adding task: {}", e));
+                        app.set_error_message(format!("Error adding task: {e}"));
                     } else {
                         task_list.move_selection_to_last();
                     }

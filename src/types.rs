@@ -40,7 +40,7 @@ impl<T: Db> AppState<T> {
             message: tasks
                 .as_ref()
                 .err()
-                .map(|e| format!("Error loading tasks: {}", e)),
+                .map(|e| format!("Error loading tasks: {e}")),
             show_help: false,
             tasks: tasks.unwrap_or_default(),
             store,

@@ -5,6 +5,12 @@ use std::time::{Duration, SystemTime};
 
 pub struct TimeTracker;
 
+impl Default for TimeTracker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TimeTracker {
     pub fn new() -> Self {
         Self

@@ -18,11 +18,11 @@ fn main() {
     });
 
     let store = SledStorage::new(db_path.join("tasks.db")).unwrap_or_else(|e| {
-        eprintln!("Error initializing database at {:?}: {}", db_path, e);
+        eprintln!("Error initializing database at {db_path:?}: {e}");
         std::process::exit(1);
     });
 
     Ui::new(AppState::new(store))
         .run()
-        .unwrap_or_else(|e| eprintln!("Error: {}", e));
+        .unwrap_or_else(|e| eprintln!("Error: {e}"));
 }

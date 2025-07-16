@@ -93,7 +93,7 @@ impl<D: Db> Ui<D> {
             crate::types::Mode::Insert => "INSERT",
         };
 
-        let status = format!("Mode: {}", mode_text);
+        let status = format!("Mode: {mode_text}");
         let status_paragraph = Paragraph::new(status).alignment(Alignment::Left);
         f.render_widget(status_paragraph, area);
     }
