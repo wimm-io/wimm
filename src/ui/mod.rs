@@ -69,7 +69,7 @@ impl<D: Db> Ui<D> {
         self.render_status(f, layout.status);
 
         // Render input bar
-        self.input_bar.render(f, layout.input, &self.app.state);
+        self.input_bar.render(f, layout.input, &self.app);
 
         // Render help panel if visible
         if let Some(help_area) = layout.help {

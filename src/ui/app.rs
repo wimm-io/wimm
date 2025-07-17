@@ -6,11 +6,15 @@ use uuid::Uuid;
 
 pub struct App<D: Db> {
     pub state: AppState<D>,
+    pub message: Option<String>,
 }
 
 impl<D: Db> App<D> {
     pub fn new(state: AppState<D>) -> Self {
-        Self { state }
+        Self {
+            state,
+            message: None,
+        }
     }
 
     pub fn add_task(&mut self, title: &str) -> Result<(), DbError> {
@@ -52,11 +56,11 @@ impl<D: Db> App<D> {
     }
 
     pub fn set_error_message(&mut self, message: String) {
-        self.state.message = Some(message);
+        self.message = Some(message);
     }
 
     pub fn clear_error_message(&mut self) {
-        self.state.message = None;
+        self.message = None;
     }
 
     fn create_task(&self, title: &str) -> Task {

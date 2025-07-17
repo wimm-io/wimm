@@ -1,7 +1,11 @@
 use std::sync::OnceLock;
 
 use directories::ProjectDirs;
-use wimm::{storage::SledStorage, types::AppState, ui::Ui};
+use wimm::{
+    storage::{Db, SledStorage},
+    types::AppState,
+    ui::Ui,
+};
 
 static PROJECT_PATH: OnceLock<Option<ProjectDirs>> = OnceLock::new();
 
@@ -22,7 +26,21 @@ fn main() {
         std::process::exit(1);
     });
 
-    Ui::new(AppState::new(store))
-        .run()
-        .unwrap_or_else(|e| eprintln!("Error: {e}"));
+    // Try to load tasks and handle any initial errors
+    match store.load_tasks() {
+        Ok(tasks) => {
+            let mut state = AppState::new(store);
+            state.tasks = tasks;
+            Ui::new(state)
+                .run()
+                .unwrap_or_else(|e| eprintln!("Error: {e}"));
+        }
+        Err(e) => {
+            eprintln!("Error loading tasks from database: {e}");
+            // Create empty state and let UI handle it
+            Ui::new(AppState::new(store))
+                .run()
+                .unwrap_or_else(|e| eprintln!("Error: {e}"));
+        }
+    }
 }

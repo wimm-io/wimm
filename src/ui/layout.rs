@@ -37,7 +37,7 @@ impl LayoutManager {
     fn calculate_floating_help(&self, area: Rect) -> Rect {
         // Create a centered floating panel
         let help_width = 50.min(area.width.saturating_sub(4));
-        let help_height = 25.min(area.height.saturating_sub(4));
+        let help_height = 20.min(area.height.saturating_sub(4));
 
         let x = (area.width.saturating_sub(help_width)) / 2;
         let y = (area.height.saturating_sub(help_height)) / 2;

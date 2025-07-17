@@ -68,16 +68,6 @@ impl HelpPanel {
             Line::from("  Backsp  - Delete character"),
             Line::from("  Esc     - Return to Normal"),
             Line::from(""),
-            Line::from(vec![Span::styled(
-                "💡 Tips",
-                Style::default()
-                    .fg(Color::Magenta)
-                    .add_modifier(Modifier::BOLD),
-            )]),
-            Line::from(""),
-            Line::from("• Tasks auto-save to database"),
-            Line::from("• Navigate with j/k like Vim"),
-            Line::from("• Press h again to close help"),
         ]
     }
 }
