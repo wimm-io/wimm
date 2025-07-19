@@ -10,18 +10,15 @@ mod events;
 mod help_panel;
 mod input_bar;
 mod layout;
-mod task_list;
 
 use app::App;
 use events::EventHandler;
 use help_panel::HelpPanel;
 use input_bar::InputBar;
 use layout::LayoutManager;
-use task_list::TaskList;
 
 pub struct Ui<D: Db> {
     app: App<D>,
-    task_list: TaskList,
     input_bar: InputBar,
     help_panel: HelpPanel,
     layout_manager: LayoutManager,
@@ -32,7 +29,6 @@ impl<D: Db> Ui<D> {
     pub fn new(app_state: AppState<D>) -> Self {
         Self {
             app: App::new(app_state),
-            task_list: TaskList::new(),
             input_bar: InputBar::new(),
             help_panel: HelpPanel::new(),
             layout_manager: LayoutManager::new(),
@@ -46,8 +42,7 @@ impl<D: Db> Ui<D> {
         while !self.app.state.should_quit {
             terminal.draw(|f| self.draw(f))?;
             let event = event::read()?;
-            self.event_handler
-                .handle_event(event, &mut self.app, &mut self.task_list);
+            self.event_handler.handle_event(event, &mut self.app);
         }
 
         ratatui::restore();
@@ -63,7 +58,7 @@ impl<D: Db> Ui<D> {
         self.render_title(f, layout.title);
 
         // Render main task list
-        self.task_list.render(f, layout.main, &self.app.state);
+        self.render_task_list(f, layout.main);
 
         // Render status bar
         self.render_status(f, layout.status);
@@ -96,6 +91,46 @@ impl<D: Db> Ui<D> {
         let status = format!("Mode: {mode_text}");
         let status_paragraph = Paragraph::new(status).alignment(Alignment::Left);
         f.render_widget(status_paragraph, area);
+    }
+
+    fn render_task_list(&mut self, f: &mut Frame, area: ratatui::layout::Rect) {
+        use ratatui::{
+            text::Line,
+            widgets::{Block, HighlightSpacing, List, ListItem, Padding},
+        };
+
+        // Auto-select first item if nothing is selected and tasks exist
+        if !self.app.state.tasks.is_empty() && self.app.selected_task_index().is_none() {
+            self.app.select_first_task();
+        }
+
+        let list_items: Vec<ListItem> = self
+            .app
+            .state
+            .tasks
+            .iter()
+            .map(|task| {
+                ListItem::new(Line::from(format!(
+                    "[{}] {}",
+                    if task.completed { "x" } else { " " },
+                    task.title
+                )))
+            })
+            .collect();
+
+        let list = List::new(list_items)
+            .block(
+                Block::bordered()
+                    .padding(Padding::uniform(1))
+                    .title(Line::from(format!(
+                        " Tasks ({}) ",
+                        self.app.state.tasks.len()
+                    ))),
+            )
+            .highlight_symbol("> ")
+            .highlight_spacing(HighlightSpacing::Always);
+
+        f.render_stateful_widget(list, area, self.app.task_list_state());
     }
 }
 

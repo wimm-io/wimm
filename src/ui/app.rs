@@ -2,11 +2,13 @@ use crate::{
     storage::{Db, DbError},
     types::{AppState, Task},
 };
+use ratatui::widgets::ListState;
 use uuid::Uuid;
 
 pub struct App<D: Db> {
     pub state: AppState<D>,
     pub message: Option<String>,
+    pub task_list_state: ListState,
 }
 
 impl<D: Db> App<D> {
@@ -14,6 +16,7 @@ impl<D: Db> App<D> {
         Self {
             state,
             message: None,
+            task_list_state: ListState::default(),
         }
     }
 
@@ -79,5 +82,38 @@ impl<D: Db> App<D> {
             self.state.store.save_task(task)?;
         }
         Ok(())
+    }
+
+    // Task list selection methods
+    pub fn select_next_task(&mut self) {
+        self.task_list_state.select_next();
+    }
+
+    pub fn select_previous_task(&mut self) {
+        self.task_list_state.select_previous();
+    }
+
+    pub fn select_first_task(&mut self) {
+        self.task_list_state.select_first();
+    }
+
+    pub fn select_last_task(&mut self) {
+        self.task_list_state.select_last();
+    }
+
+    pub fn selected_task_index(&self) -> Option<usize> {
+        self.task_list_state.selected()
+    }
+
+    pub fn move_selection_to_last_task(&mut self) {
+        self.task_list_state.select_last();
+    }
+
+    pub fn adjust_selection_after_delete(&mut self) {
+        self.task_list_state.select_previous();
+    }
+
+    pub fn task_list_state(&mut self) -> &mut ListState {
+        &mut self.task_list_state
     }
 }

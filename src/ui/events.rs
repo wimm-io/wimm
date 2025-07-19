@@ -2,7 +2,7 @@ use ratatui::crossterm::event::{Event, KeyCode, KeyEventKind};
 
 use crate::storage::Db;
 use crate::types::Mode;
-use crate::ui::{app::App, task_list::TaskList};
+use crate::ui::app::App;
 
 pub struct EventHandler;
 
@@ -11,18 +11,18 @@ impl EventHandler {
         Self
     }
 
-    pub fn handle_event<D: Db>(&self, event: Event, app: &mut App<D>, task_list: &mut TaskList) {
+    pub fn handle_event<D: Db>(&self, event: Event, app: &mut App<D>) {
         if let Event::Key(key) = event {
             if key.kind == KeyEventKind::Press {
                 match app.state.mode {
-                    Mode::Normal => self.handle_normal_key(key.code, app, task_list),
-                    Mode::Insert => self.handle_insert_key(key.code, app, task_list),
+                    Mode::Normal => self.handle_normal_key(key.code, app),
+                    Mode::Insert => self.handle_insert_key(key.code, app),
                 }
             }
         }
     }
 
-    fn handle_normal_key<D: Db>(&self, key: KeyCode, app: &mut App<D>, task_list: &mut TaskList) {
+    fn handle_normal_key<D: Db>(&self, key: KeyCode, app: &mut App<D>) {
         match key {
             KeyCode::Char('q') => app.quit(),
             KeyCode::Char('i') => {
@@ -32,23 +32,23 @@ impl EventHandler {
             KeyCode::Char('h') => {
                 app.state.show_help = true;
             }
-            KeyCode::Char('j') => task_list.select_next(),
-            KeyCode::Char('k') => task_list.select_previous(),
-            KeyCode::Char('g') => task_list.select_first(),
-            KeyCode::Char('G') => task_list.select_last(),
+            KeyCode::Char('j') => app.select_next_task(),
+            KeyCode::Char('k') => app.select_previous_task(),
+            KeyCode::Char('g') => app.select_first_task(),
+            KeyCode::Char('G') => app.select_last_task(),
             KeyCode::Char('x') => {
-                if let Some(selected) = task_list.selected_index() {
+                if let Some(selected) = app.selected_task_index() {
                     if let Err(e) = app.toggle_task_completion(selected) {
                         app.set_error_message(format!("Error updating task: {e}"));
                     }
                 }
             }
             KeyCode::Char('D') => {
-                if let Some(selected) = task_list.selected_index() {
+                if let Some(selected) = app.selected_task_index() {
                     if let Err(e) = app.delete_task(selected) {
                         app.set_error_message(format!("Error deleting task: {e}"));
                     } else {
-                        task_list.adjust_selection_after_delete();
+                        app.adjust_selection_after_delete();
                     }
                 }
             }
@@ -59,7 +59,7 @@ impl EventHandler {
         }
     }
 
-    fn handle_insert_key<D: Db>(&self, key: KeyCode, app: &mut App<D>, task_list: &mut TaskList) {
+    fn handle_insert_key<D: Db>(&self, key: KeyCode, app: &mut App<D>) {
         match key {
             KeyCode::Esc => {
                 app.clear_input_buffer();
@@ -74,7 +74,7 @@ impl EventHandler {
                     if let Err(e) = app.add_task(&input_text) {
                         app.set_error_message(format!("Error adding task: {e}"));
                     } else {
-                        task_list.move_selection_to_last();
+                        app.move_selection_to_last_task();
                     }
                 }
                 app.clear_input_buffer();
