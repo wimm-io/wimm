@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::{
     storage::{Db, DbError},
     types::{AppState, Task},
@@ -9,6 +11,7 @@ pub struct App<D: Db> {
     pub state: AppState<D>,
     pub message: Option<String>,
     pub task_list_state: ListState,
+    task_selection: HashSet<usize>,
 }
 
 impl<D: Db> App<D> {
@@ -17,6 +20,7 @@ impl<D: Db> App<D> {
             state,
             message: None,
             task_list_state: ListState::default(),
+            task_selection: HashSet::default(),
         }
     }
 
@@ -26,11 +30,8 @@ impl<D: Db> App<D> {
         self.sync_to_storage()
     }
 
-    pub fn toggle_task_completion(&mut self, index: usize) -> Result<(), DbError> {
-        if let Some(task) = self.state.tasks.get_mut(index) {
-            task.completed = !task.completed;
-            self.sync_to_storage()?;
-        }
+    pub fn toggle_task_completion(&mut self) -> Result<(), DbError> {
+        self.apply_to_selection(|t| t.completed = !t.completed);
         Ok(())
     }
 
@@ -76,6 +77,22 @@ impl<D: Db> App<D> {
         }
     }
 
+    fn apply_to_selection<F>(&mut self, mut func: F)
+    where
+        F: FnMut(&mut Task),
+    {
+        let indices: Vec<usize> = self.selection().collect();
+        for index in indices {
+            if let Some(task) = self.state.tasks.get_mut(index) {
+                func(task);
+            }
+        }
+        self.sync_to_storage().unwrap_or_else(|e| {
+            self.set_error_message(format!("Error syncing tasks: {}", e));
+        });
+        self.clear_task_selection();
+    }
+
     fn sync_to_storage(&mut self) -> Result<(), DbError> {
         self.state.store.clear()?;
         for task in &self.state.tasks {
@@ -85,35 +102,77 @@ impl<D: Db> App<D> {
     }
 
     // Task list selection methods
-    pub fn select_next_task(&mut self) {
+    pub fn cursor_next_task(&mut self) {
         self.task_list_state.select_next();
     }
 
-    pub fn select_previous_task(&mut self) {
+    pub fn cursor_previous_task(&mut self) {
         self.task_list_state.select_previous();
     }
 
-    pub fn select_first_task(&mut self) {
+    pub fn cursor_first_task(&mut self) {
         self.task_list_state.select_first();
     }
 
-    pub fn select_last_task(&mut self) {
+    pub fn cursor_last_task(&mut self) {
         self.task_list_state.select_last();
     }
 
-    pub fn selected_task_index(&self) -> Option<usize> {
+    pub fn cursor_task_index(&self) -> Option<usize> {
         self.task_list_state.selected()
-    }
-
-    pub fn move_selection_to_last_task(&mut self) {
-        self.task_list_state.select_last();
     }
 
     pub fn adjust_selection_after_delete(&mut self) {
         self.task_list_state.select_previous();
     }
 
+    pub fn clear_task_selection(&mut self) {
+        self.task_selection.clear();
+    }
+
+    pub fn selection(&self) -> SelectionIterator<'_> {
+        if !self.task_selection.is_empty() {
+            SelectionIterator::Multiple(self.task_selection.iter())
+        } else if let Some(selected) = self.task_list_state.selected() {
+            SelectionIterator::Single(std::iter::once(selected))
+        } else {
+            SelectionIterator::Empty
+        }
+    }
+
+    pub fn toggle_task_selection(&mut self) {
+        if let Some(selected) = self.task_list_state.selected() {
+            if self.task_selection.contains(&selected) {
+                self.task_selection.remove(&selected);
+            } else {
+                self.task_selection.insert(selected);
+            }
+        }
+    }
+
+    pub fn is_task_selected(&self, index: usize) -> bool {
+        self.task_selection.contains(&index)
+    }
+
     pub fn task_list_state(&mut self) -> &mut ListState {
         &mut self.task_list_state
+    }
+}
+
+pub enum SelectionIterator<'a> {
+    Multiple(std::collections::hash_set::Iter<'a, usize>),
+    Single(std::iter::Once<usize>),
+    Empty,
+}
+
+impl<'a> Iterator for SelectionIterator<'a> {
+    type Item = usize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            SelectionIterator::Multiple(iter) => iter.next().copied(),
+            SelectionIterator::Single(iter) => iter.next(),
+            SelectionIterator::Empty => None,
+        }
     }
 }

@@ -32,19 +32,18 @@ impl EventHandler {
             KeyCode::Char('h') => {
                 app.state.show_help = true;
             }
-            KeyCode::Char('j') => app.select_next_task(),
-            KeyCode::Char('k') => app.select_previous_task(),
-            KeyCode::Char('g') => app.select_first_task(),
-            KeyCode::Char('G') => app.select_last_task(),
-            KeyCode::Char('x') => {
-                if let Some(selected) = app.selected_task_index() {
-                    if let Err(e) = app.toggle_task_completion(selected) {
-                        app.set_error_message(format!("Error updating task: {e}"));
-                    }
+            KeyCode::Char('j') => app.cursor_next_task(),
+            KeyCode::Char('k') => app.cursor_previous_task(),
+            KeyCode::Char('g') => app.cursor_first_task(),
+            KeyCode::Char('G') => app.cursor_last_task(),
+            KeyCode::Char('!') => {
+                if let Err(e) = app.toggle_task_completion() {
+                    app.set_error_message(format!("Error updating task: {e}"));
                 }
             }
+            KeyCode::Char('x') => app.toggle_task_selection(),
             KeyCode::Char('D') => {
-                if let Some(selected) = app.selected_task_index() {
+                if let Some(selected) = app.cursor_task_index() {
                     if let Err(e) = app.delete_task(selected) {
                         app.set_error_message(format!("Error deleting task: {e}"));
                     } else {
@@ -74,7 +73,7 @@ impl EventHandler {
                     if let Err(e) = app.add_task(&input_text) {
                         app.set_error_message(format!("Error adding task: {e}"));
                     } else {
-                        app.move_selection_to_last_task();
+                        app.cursor_last_task();
                     }
                 }
                 app.clear_input_buffer();

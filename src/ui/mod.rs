@@ -1,5 +1,6 @@
 use ratatui::Frame;
 use ratatui::crossterm::event;
+use ratatui::style::{Color, Style};
 use thiserror::Error;
 
 use crate::storage::{self, Db};
@@ -100,8 +101,8 @@ impl<D: Db> Ui<D> {
         };
 
         // Auto-select first item if nothing is selected and tasks exist
-        if !self.app.state.tasks.is_empty() && self.app.selected_task_index().is_none() {
-            self.app.select_first_task();
+        if !self.app.state.tasks.is_empty() && self.app.cursor_task_index().is_none() {
+            self.app.cursor_first_task();
         }
 
         let list_items: Vec<ListItem> = self
@@ -109,12 +110,18 @@ impl<D: Db> Ui<D> {
             .state
             .tasks
             .iter()
-            .map(|task| {
+            .enumerate()
+            .map(|(i, task)| {
                 ListItem::new(Line::from(format!(
                     "[{}] {}",
                     if task.completed { "x" } else { " " },
                     task.title
                 )))
+                .style(Style::default().bg(if self.app.is_task_selected(i) {
+                    Color::DarkGray
+                } else {
+                    Color::Reset
+                }))
             })
             .collect();
 
