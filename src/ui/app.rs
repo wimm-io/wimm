@@ -32,14 +32,21 @@ impl<D: Db> App<D> {
 
     pub fn toggle_task_completion(&mut self) -> Result<(), DbError> {
         self.apply_to_selection(|t| t.completed = !t.completed);
+        self.clear_task_selection();
         Ok(())
     }
 
-    pub fn delete_task(&mut self, index: usize) -> Result<(), DbError> {
-        if index < self.state.tasks.len() {
-            self.state.tasks.remove(index);
-            self.sync_to_storage()?;
+    pub fn delete_tasks(&mut self) -> Result<(), DbError> {
+        let mut indices: Vec<usize> = self.selection().collect();
+        indices.sort();
+
+        for index in indices.iter().rev() {
+            if *index < self.state.tasks.len() {
+                self.state.tasks.swap_remove(*index);
+            }
         }
+        self.sync_to_storage()?;
+        self.clear_task_selection();
         Ok(())
     }
 
@@ -120,10 +127,6 @@ impl<D: Db> App<D> {
 
     pub fn cursor_task_index(&self) -> Option<usize> {
         self.task_list_state.selected()
-    }
-
-    pub fn adjust_selection_after_delete(&mut self) {
-        self.task_list_state.select_previous();
     }
 
     pub fn clear_task_selection(&mut self) {

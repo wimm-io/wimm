@@ -30,7 +30,7 @@ impl EventHandler {
                 app.clear_error_message();
             }
             KeyCode::Char('h') => {
-                app.state.show_help = true;
+                app.state.show_help = !app.state.show_help;
             }
             KeyCode::Char('j') => app.cursor_next_task(),
             KeyCode::Char('k') => app.cursor_previous_task(),
@@ -39,20 +39,15 @@ impl EventHandler {
             KeyCode::Char('!') => {
                 if let Err(e) = app.toggle_task_completion() {
                     app.set_error_message(format!("Error updating task: {e}"));
+                } else {
+                    app.cursor_first_task();
                 }
             }
             KeyCode::Char('x') => app.toggle_task_selection(),
             KeyCode::Char('D') => {
-                if let Some(selected) = app.cursor_task_index() {
-                    if let Err(e) = app.delete_task(selected) {
-                        app.set_error_message(format!("Error deleting task: {e}"));
-                    } else {
-                        app.adjust_selection_after_delete();
-                    }
+                if let Err(e) = app.delete_tasks() {
+                    app.set_error_message(format!("Error deleting tasks: {e}"));
                 }
-            }
-            KeyCode::Esc => {
-                app.state.show_help = false;
             }
             _ => {}
         }
