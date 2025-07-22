@@ -4,6 +4,9 @@
     "ghcr.io/devcontainers/features/rust:1": {
       "profile": "default"
     },
-    "ghcr.io/duduribeiro/devcontainer-features/neovim:1": {}
+    "ghcr.io/duduribeiro/devcontainer-features/neovim:1": {},
+    "ghcr.io/devcontainers/features/sshd:1": {
+      "version": "latest"
+    }
   }
 }
