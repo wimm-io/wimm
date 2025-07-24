@@ -10,6 +10,7 @@
   },
   "postCreateCommand": {
     "neovim": "sudo mkdir /usr/local/nvim && curl -L https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz | sudo tar -zx -C /usr/local/nvim --strip-components=1",
-    "kickstart.nvim": "git clone https://github.com/sleb/kickstart.nvim.git $HOME/.config/nvim"
+    "kickstart.nvim": "git clone https://github.com/sleb/kickstart.nvim.git $HOME/.config/nvim",
+    "just": "cargo install just"
   }
 }

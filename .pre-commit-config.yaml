@@ -20,7 +20,7 @@ repos:
       - id: fmt
         name: Rust Format Check
         description: Check that Rust code is formatted with rustfmt
-        entry: cargo fmt --all -- --check
+        entry: just fmt-check
         language: system
         files: \.rs$
         pass_filenames: false
@@ -29,7 +29,7 @@ repos:
       - id: clippy
         name: Rust Clippy
         description: Run Clippy lints on Rust code
-        entry: cargo clippy --all-targets --all-features -- -D warnings
+        entry: just clippy
         language: system
         files: \.rs$
         pass_filenames: false
@@ -41,7 +41,7 @@ repos:
       - id: cargo-test
         name: Cargo Test
         description: Run all Rust tests
-        entry: cargo test --all-features
+        entry: just test
         language: system
         files: \.rs$
         pass_filenames: false
@@ -54,7 +54,7 @@ repos:
         args:
           [
             "-c",
-            'cargo tarpaulin --exclude-files "src/main.rs" --fail-under 60 --skip-clean || (echo "❌ Coverage below 60% threshold. Run make coverage-open to see details."; exit 1)',
+            'just coverage || (echo "❌ Coverage below 60% threshold. Run just coverage-open to see details."; exit 1)',
           ]
         language: system
         files: \.rs$
@@ -65,12 +65,7 @@ repos:
       - id: cargo-audit
         name: Security Audit
         description: Run security audit on dependencies
-        entry: bash
-        args:
-          [
-            "-c",
-            "command -v cargo-audit >/dev/null || cargo install cargo-audit; cargo audit",
-          ]
+        entry: just audit
         language: system
         files: (Cargo\.(toml|lock)|\.rs)$
         pass_filenames: false
@@ -149,8 +144,7 @@ repos:
       - id: full-coverage-report
         name: Full Coverage Report
         description: Generate full coverage report for push
-        entry: bash
-        args: ["-c", "./scripts/check-coverage.sh --threshold 60 || true"]
+        entry: just coverage
         language: system
         files: \.rs$
         pass_filenames: false

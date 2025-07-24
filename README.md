@@ -45,14 +45,24 @@ cargo build --release
 ### Development Setup
 
 ```bash
-# Install development tools
-make install-tools
+# First, install Just command runner
+# Option 1: Using Homebrew (macOS/Linux)
+brew install just
+
+# Option 2: Using Cargo (any platform with Rust)
+cargo install just
+
+# Option 3: Using the migration script
+./scripts/migrate-to-just.sh
+
+# Then install development tools
+just install-tools
 
 # Run all checks (tests + lint + coverage)
-make dev
+just dev
 
 # Start development with file watching
-make watch
+just watch
 ```
 
 ## 🎮 Usage
@@ -110,13 +120,13 @@ This project maintains **high test coverage (62.59%)** with comprehensive unit a
 
 ```bash
 # Generate and open HTML coverage report
-make coverage-open
+just coverage-open
 
 # Run coverage with threshold enforcement
-./scripts/check-coverage.sh
+just coverage
 
 # Run all development checks
-make dev
+just dev
 ```
 
 ### Coverage Details
@@ -145,28 +155,28 @@ make dev
 
 ```bash
 # Testing
-make test              # Run all tests
-make test-unit         # Unit tests only
-make test-integration  # Integration tests only
-make test-watch        # Watch mode
+just test              # Run all tests
+just test-unit         # Unit tests only
+just test-integration  # Integration tests only
+just test-watch        # Watch mode
 
 # Coverage
-make coverage          # Basic coverage check (60% threshold)
-make coverage-html     # Generate HTML report
-make coverage-open     # Generate and open HTML report
-make coverage-clean    # Clean coverage artifacts
+just coverage          # Basic coverage check (60% threshold)
+just coverage-html     # Generate HTML report
+just coverage-open     # Generate and open HTML report
+just coverage-clean    # Clean coverage artifacts
 
 # Code Quality
-make lint              # Format + clippy
-make fmt               # Format code
-make clippy            # Lint code
-make audit             # Security audit
+just lint              # Format + clippy
+just fmt               # Format code
+just clippy            # Lint code
+just audit             # Security audit
 
 # Development Workflow
-make dev               # Full check (test + lint + coverage)
-make ci                # CI simulation
-make quick             # Fast check (test + clippy)
-make pre-commit        # Pre-commit simulation
+just dev               # Full check (test + lint + coverage)
+just ci                # CI simulation
+just quick             # Fast check (test + clippy)
+just pre-commit        # Pre-commit simulation
 ```
 
 ### Project Structure
@@ -295,8 +305,13 @@ These services are optional - CI will pass even if tokens are missing or uploads
 2. **Set Up Development Environment**
 
    ```bash
-   make install-tools
-   pre-commit install
+   # Install Just first (choose one method):
+   brew install just              # macOS/Linux with Homebrew
+   cargo install just             # Any platform with Rust
+
+   # Then set up development tools
+   just install-tools             # Install dev tools
+   pre-commit install             # Install pre-commit hooks
    ```
 
 3. **Make Changes**
@@ -307,7 +322,7 @@ These services are optional - CI will pass even if tokens are missing or uploads
 
    # Make changes and add tests
    # Ensure coverage doesn't drop
-   make dev
+   just dev
    ```
 
 4. **Submit Pull Request**
@@ -350,7 +365,7 @@ These services are optional - CI will pass even if tokens are missing or uploads
 **Coverage Below Threshold**
 
 ```bash
-make coverage-open  # View detailed HTML report
+just coverage-open  # View detailed HTML report
 # Add tests for red highlighted lines
 ```
 
