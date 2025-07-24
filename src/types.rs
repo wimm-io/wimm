@@ -15,7 +15,12 @@ pub struct Task {
     pub title: String,
     pub description: String,
     pub completed: bool,
+    /// When the task was created (read-only in UI)
     pub created_at: SystemTime,
+    /// Optional due date - when the task should be completed
+    pub due: Option<SystemTime>,
+    /// Optional defer date - when to start working on the task
+    pub defer_until: Option<SystemTime>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

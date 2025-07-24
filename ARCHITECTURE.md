@@ -311,6 +311,7 @@ pub enum UiError {
 
 ```toml
 [dependencies]
+chrono = { version = "0.4", features = ["serde"] }  # Date and time handling
 directories = "6.0"          # Cross-platform directory resolution
 ratatui = "0.29"             # Terminal UI framework
 serde = { version = "1.0", features = ["derive"] }  # Serialization
@@ -347,25 +348,89 @@ The UI implements a table-based task display with in-place editing capabilities:
 
 **Table Structure**
 
-- **Status Column**: Shows completion state `[x]` or `[ ]`
-- **Title Column**: Displays and allows editing of task titles (40% width)
-- **Description Column**: Displays and allows editing of task descriptions (55% width)
+- **Status Column**: Shows completion state `[x]` or `[ ]` (5 chars width)
+- **Title Column**: Displays and allows editing of task titles (25% width)
+- **Description Column**: Displays and allows editing of task descriptions (30% width)
+- **Created Column**: Shows creation date - relative time or absolute date (10 chars width)
+- **Due Column**: Displays and allows editing of due dates (10 chars width)
+- **Defer Until Column**: Displays and allows editing of defer dates (12 chars width)
 
 **Editing Workflow**
 
 - **Task Creation**: `o`/`O` keys create new tasks below/above current cursor
-- **Field Navigation**: `Tab`/`Shift+Tab` moves between Title and Description fields
-- **Visual Feedback**: Active editing field highlighted with yellow background
+- **Task Editing**: `i` key edits the currently selected existing task
+- **Field Navigation**: `Tab`/`Shift+Tab` cycles through Title → Description → Due → Defer Until
+- **Visual Feedback**: Active editing field highlighted with yellow background (even when empty)
 - **State Management**: Editing task state preserved during field navigation
 - **Save/Cancel**: `Enter` saves changes, `Esc` cancels and returns to Normal mode
 
+**Date Field Enhancements**
+
+- **Natural Language Support**: Accepts keywords like "tomorrow", "friday", "next monday"
+- **Relative Date Parsing**: Supports formats like "2d", "1w", "3h", "30m"
+- **Absolute Date Parsing**: Accepts YYYY-MM-DD and MM-DD formats
+- **Smart Date Display**: Shows relative time for recent tasks, absolute dates for older tasks
+- **Default Times**: Due dates default to 5pm, defer dates default to 8am
+- **Visual Highlighting**: Color-coded task rows based on due dates and defer status
+
 **Display Logic**
 
-- **Normal Mode**: Shows task data from main task list
+- **Normal Mode**: Shows task data with contextual highlighting based on due dates
 - **Edit Mode**: Shows current editing task state with field-specific highlighting
-- **Row Selection**: Selected tasks highlighted with blue background
+- **Row Selection**: Current task indicated with `>` symbol (no background highlighting)
 - **Multi-Selection**: Selected tasks highlighted with dark gray background
-- **Visual Feedback**: Selected tasks highlighted with different background
+- **Due Date Highlighting**:
+  - Bold red text: Due today or overdue
+  - Bold yellow text: Due within 24 hours
+  - Normal text: Due later or no due date
+- **Defer Status**: Deferred tasks shown in dark gray until defer time passes
+
+### Task Highlighting System
+
+The UI implements a sophisticated highlighting system to provide immediate visual feedback about task urgency and status:
+
+**Highlighting Priority Order**
+
+1. **Deferred Tasks**: Highest priority - tasks are dimmed (dark gray) if current time < defer_until
+2. **Overdue Tasks**: Bold red text for tasks past their due date
+3. **Due Today**: Bold red text for tasks due within current day
+4. **Due Soon**: Bold yellow text for tasks due within next 24 hours
+5. **Normal**: Default styling for all other tasks
+
+**Implementation Details**
+
+- Highlighting is applied using foreground colors and bold text
+- Multi-selection highlighting (dark gray background) preserves base task highlighting
+- Clean visual hierarchy with minimal background colors
+- Real-time evaluation based on current system time
+
+```rust
+fn get_task_highlight_style(task: &Task) -> Style {
+    // 1. Check defer status first (highest priority)
+    if let Some(defer_until) = task.defer_until {
+        if now < defer_until {
+            return Style::default().fg(Color::DarkGray);
+        }
+    }
+
+    // 2. Check due date urgency
+    if let Some(due_date) = task.due {
+        match due_date.duration_since(now) {
+            Ok(duration) if duration.as_secs() / 3600 <= 24 => {
+                // Due within 24 hours
+                Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+            }
+            Err(_) => {
+                // Overdue
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)
+            }
+            _ => Style::default()
+        }
+    } else {
+        Style::default()
+    }
+}
+```
 
 ### Selection Iterator
 
@@ -380,6 +445,26 @@ pub enum SelectionIterator<'a> {
 Provides unified interface for operating on single or multiple tasks.
 
 ## Future Architecture Considerations
+
+### Recently Implemented Enhancements
+
+1. **Enhanced Date Management System**
+   - Natural language date parsing with chrono integration
+   - Smart date display (relative vs absolute based on age)
+   - Comprehensive date input formats for better UX
+   - Contextual default times (5pm for due dates, 8am for defer dates)
+
+2. **Improved Visual Feedback**
+   - Enhanced field highlighting for empty editing fields
+   - Better visual indicators for active editing state
+   - Consistent yellow highlighting across all field types
+   - Clean foreground-based highlighting system with minimal background colors
+
+3. **Extended Task Data Model**
+   - Added `due` and `defer_until` optional date fields
+   - Backward-compatible JSON serialization
+   - Comprehensive field validation and parsing
+   - Smart highlighting logic based on task urgency and defer status
 
 ### Planned Enhancements
 

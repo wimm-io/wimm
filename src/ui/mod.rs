@@ -1,3 +1,4 @@
+use chrono::{DateTime, Local};
 use ratatui::Frame;
 use ratatui::crossterm::event;
 use ratatui::layout::Constraint;
@@ -5,10 +6,133 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Cell, Padding, Row, Table};
 use std::collections::HashSet;
+use std::time::SystemTime;
 use thiserror::Error;
 
 use crate::storage::{self, Db};
-use crate::types::AppState;
+use crate::types::{AppState, Task};
+
+fn format_date(time: Option<SystemTime>) -> String {
+    match time {
+        Some(t) => format_time_relative(t),
+        None => "-".to_string(),
+    }
+}
+
+fn format_time_relative(time: SystemTime) -> String {
+    let now = SystemTime::now();
+    match now.duration_since(time) {
+        Ok(duration) => {
+            let secs = duration.as_secs();
+            let days = secs / 86400;
+            let hours = (secs % 86400) / 3600;
+            let minutes = (secs % 3600) / 60;
+
+            if days > 0 {
+                format!("{}d ago", days)
+            } else if hours > 0 {
+                format!("{}h ago", hours)
+            } else if minutes > 0 {
+                format!("{}m ago", minutes)
+            } else {
+                "now".to_string()
+            }
+        }
+        Err(_) => {
+            // Future date
+            match time.duration_since(now) {
+                Ok(duration) => {
+                    let secs = duration.as_secs();
+                    let days = secs / 86400;
+                    let hours = (secs % 86400) / 3600;
+                    let minutes = (secs % 3600) / 60;
+
+                    if days > 0 {
+                        format!("in {}d", days)
+                    } else if hours > 0 {
+                        format!("in {}h", hours)
+                    } else if minutes > 0 {
+                        format!("in {}m", minutes)
+                    } else {
+                        "now".to_string()
+                    }
+                }
+                Err(_) => "Invalid".to_string(),
+            }
+        }
+    }
+}
+
+fn format_created_at(time: SystemTime) -> String {
+    let now = SystemTime::now();
+    let datetime = DateTime::<Local>::from(time);
+
+    match now.duration_since(time) {
+        Ok(duration) => {
+            let secs = duration.as_secs();
+            let days = secs / 86400;
+            let hours = (secs % 86400) / 3600;
+            let minutes = (secs % 3600) / 60;
+
+            // For tasks created within the last day, show relative time
+            if days == 0 {
+                if hours > 0 {
+                    format!("{}h ago", hours)
+                } else if minutes > 0 {
+                    format!("{}m ago", minutes)
+                } else {
+                    "now".to_string()
+                }
+            } else {
+                // For older tasks, show the actual date
+                datetime.format("%Y-%m-%d").to_string()
+            }
+        }
+        Err(_) => datetime.format("%Y-%m-%d").to_string(),
+    }
+}
+
+fn get_task_highlight_style(task: &Task) -> Style {
+    let now = SystemTime::now();
+
+    // Check if task is deferred (should be dimmed)
+    if let Some(defer_until) = task.defer_until {
+        if now < defer_until {
+            return Style::default().fg(Color::DarkGray);
+        }
+    }
+
+    // Check due date highlighting
+    if let Some(due_date) = task.due {
+        let time_until_due = due_date.duration_since(now);
+
+        match time_until_due {
+            Ok(duration) => {
+                let hours_until_due = duration.as_secs() / 3600;
+
+                if hours_until_due == 0 {
+                    // Due today - strong highlight (red text)
+                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)
+                } else if hours_until_due <= 24 {
+                    // Due within 24 hours - subtle highlight (yellow text)
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    // Not due soon - normal style
+                    Style::default()
+                }
+            }
+            Err(_) => {
+                // Overdue - strong red highlight
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)
+            }
+        }
+    } else {
+        // No due date - normal style
+        Style::default()
+    }
+}
 
 mod app;
 mod events;
@@ -94,6 +218,8 @@ impl<D: Db> Ui<D> {
                     let field_name = match self.app.state.editing_field {
                         0 => "Title",
                         1 => "Description",
+                        2 => "Due Date",
+                        3 => "Defer Until",
                         _ => "Unknown",
                     };
                     format!("INSERT - Editing: {}", field_name)
@@ -118,6 +244,9 @@ impl<D: Db> Ui<D> {
             Cell::from("Status").style(Style::default().add_modifier(Modifier::BOLD)),
             Cell::from("Title").style(Style::default().add_modifier(Modifier::BOLD)),
             Cell::from("Description").style(Style::default().add_modifier(Modifier::BOLD)),
+            Cell::from("Created").style(Style::default().add_modifier(Modifier::BOLD)),
+            Cell::from("Due").style(Style::default().add_modifier(Modifier::BOLD)),
+            Cell::from("Defer Until").style(Style::default().add_modifier(Modifier::BOLD)),
         ]);
 
         // Get necessary data before borrowing self.app mutably
@@ -143,8 +272,13 @@ impl<D: Db> Ui<D> {
 
                 let title_cell = if is_editing && is_selected && editing_field == 0 {
                     // Currently editing title - show input buffer with highlight
+                    let display_text = if input_buffer.is_empty() {
+                        " "
+                    } else {
+                        &input_buffer
+                    };
                     Cell::from(Line::from(vec![Span::styled(
-                        input_buffer.clone(),
+                        display_text,
                         Style::default().bg(Color::Yellow).fg(Color::Black),
                     )]))
                 } else if is_editing && is_selected {
@@ -160,8 +294,13 @@ impl<D: Db> Ui<D> {
 
                 let description_cell = if is_editing && is_selected && editing_field == 1 {
                     // Currently editing description - show input buffer with highlight
+                    let display_text = if input_buffer.is_empty() {
+                        " "
+                    } else {
+                        &input_buffer
+                    };
                     Cell::from(Line::from(vec![Span::styled(
-                        input_buffer.clone(),
+                        display_text,
                         Style::default().bg(Color::Yellow).fg(Color::Black),
                     )]))
                 } else if is_editing && is_selected {
@@ -175,15 +314,63 @@ impl<D: Db> Ui<D> {
                     Cell::from(task.description.clone())
                 };
 
-                Row::new(vec![status_cell, title_cell, description_cell]).style(
-                    Style::default().bg(if selected_tasks.contains(&i) {
-                        Color::DarkGray
-                    } else if is_selected {
-                        Color::Blue
+                let created_cell = Cell::from(format_created_at(task.created_at));
+
+                let due_cell = if is_editing && is_selected && editing_field == 2 {
+                    let display_text = if input_buffer.is_empty() {
+                        " "
                     } else {
-                        Color::Reset
-                    }),
-                )
+                        &input_buffer
+                    };
+                    Cell::from(Line::from(vec![Span::styled(
+                        display_text,
+                        Style::default().bg(Color::Yellow).fg(Color::Black),
+                    )]))
+                } else if is_editing && is_selected {
+                    if let Some(ref editing_task) = editing_task {
+                        Cell::from(format_date(editing_task.due))
+                    } else {
+                        Cell::from(format_date(task.due))
+                    }
+                } else {
+                    Cell::from(format_date(task.due))
+                };
+
+                let defer_cell = if is_editing && is_selected && editing_field == 3 {
+                    let display_text = if input_buffer.is_empty() {
+                        " "
+                    } else {
+                        &input_buffer
+                    };
+                    Cell::from(Line::from(vec![Span::styled(
+                        display_text,
+                        Style::default().bg(Color::Yellow).fg(Color::Black),
+                    )]))
+                } else if is_editing && is_selected {
+                    if let Some(ref editing_task) = editing_task {
+                        Cell::from(format_date(editing_task.defer_until))
+                    } else {
+                        Cell::from(format_date(task.defer_until))
+                    }
+                } else {
+                    Cell::from(format_date(task.defer_until))
+                };
+
+                let base_style = get_task_highlight_style(task);
+
+                Row::new(vec![
+                    status_cell,
+                    title_cell,
+                    description_cell,
+                    created_cell,
+                    due_cell,
+                    defer_cell,
+                ])
+                .style(if selected_tasks.contains(&i) {
+                    base_style.bg(Color::DarkGray)
+                } else {
+                    base_style
+                })
             })
             .collect();
 
@@ -191,8 +378,11 @@ impl<D: Db> Ui<D> {
             rows,
             [
                 Constraint::Length(5),      // Status column
-                Constraint::Percentage(40), // Title column
-                Constraint::Percentage(55), // Description column
+                Constraint::Percentage(25), // Title column
+                Constraint::Percentage(30), // Description column
+                Constraint::Length(10),     // Created column
+                Constraint::Length(10),     // Due column
+                Constraint::Length(12),     // Defer Until column
             ],
         )
         .header(header)
@@ -213,6 +403,111 @@ impl<D: Db> Ui<D> {
             .alignment(Alignment::Left)
             .style(Style::default().fg(Color::Red));
         f.render_widget(error_paragraph, area);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn test_format_created_at_recent() {
+        let now = SystemTime::now();
+        let two_hours_ago = now - Duration::from_secs(2 * 60 * 60);
+        let result = format_created_at(two_hours_ago);
+        assert_eq!(result, "2h ago");
+    }
+
+    #[test]
+    fn test_format_created_at_old() {
+        let now = SystemTime::now();
+        let two_days_ago = now - Duration::from_secs(2 * 24 * 60 * 60);
+        let result = format_created_at(two_days_ago);
+        // Should show actual date for tasks older than 1 day
+        assert!(result.contains("-"));
+        assert!(!result.contains("ago"));
+    }
+
+    #[test]
+    fn test_format_time_relative() {
+        let now = SystemTime::now();
+        let one_hour_ago = now - Duration::from_secs(60 * 60);
+        let result = format_time_relative(one_hour_ago);
+        assert_eq!(result, "1h ago");
+
+        let future_time = now + Duration::from_secs(2 * 24 * 60 * 60);
+        let result = format_time_relative(future_time);
+        assert!(result.starts_with("in ") && result.contains("d"));
+    }
+
+    #[test]
+    fn test_get_task_highlight_style_normal() {
+        let task = Task {
+            id: "test".to_string(),
+            title: "Test Task".to_string(),
+            description: "Test Description".to_string(),
+            completed: false,
+            created_at: SystemTime::now(),
+            due: None,
+            defer_until: None,
+        };
+
+        let style = get_task_highlight_style(&task);
+        assert_eq!(style, Style::default());
+    }
+
+    #[test]
+    fn test_get_task_highlight_style_deferred() {
+        let future_time = SystemTime::now() + Duration::from_secs(60 * 60); // 1 hour from now
+        let task = Task {
+            id: "test".to_string(),
+            title: "Test Task".to_string(),
+            description: "Test Description".to_string(),
+            completed: false,
+            created_at: SystemTime::now(),
+            due: None,
+            defer_until: Some(future_time),
+        };
+
+        let style = get_task_highlight_style(&task);
+        assert_eq!(style.fg, Some(Color::DarkGray));
+    }
+
+    #[test]
+    fn test_get_task_highlight_style_due_soon() {
+        let due_in_12_hours = SystemTime::now() + Duration::from_secs(12 * 60 * 60);
+        let task = Task {
+            id: "test".to_string(),
+            title: "Test Task".to_string(),
+            description: "Test Description".to_string(),
+            completed: false,
+            created_at: SystemTime::now(),
+            due: Some(due_in_12_hours),
+            defer_until: None,
+        };
+
+        let style = get_task_highlight_style(&task);
+        assert_eq!(style.fg, Some(Color::Yellow));
+        assert!(style.add_modifier.contains(Modifier::BOLD));
+    }
+
+    #[test]
+    fn test_get_task_highlight_style_overdue() {
+        let past_time = SystemTime::now() - Duration::from_secs(60 * 60); // 1 hour ago
+        let task = Task {
+            id: "test".to_string(),
+            title: "Test Task".to_string(),
+            description: "Test Description".to_string(),
+            completed: false,
+            created_at: SystemTime::now(),
+            due: Some(past_time),
+            defer_until: None,
+        };
+
+        let style = get_task_highlight_style(&task);
+        assert_eq!(style.fg, Some(Color::Red));
+        assert!(style.add_modifier.contains(Modifier::BOLD));
     }
 }
 

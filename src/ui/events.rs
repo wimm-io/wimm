@@ -42,6 +42,11 @@ impl EventHandler {
                 let field_content = app.get_editing_task_field(app.state.editing_field);
                 app.state.input_buffer = field_content;
             }
+            KeyCode::Char('i') => {
+                app.start_editing_current_task();
+                app.state.mode = Mode::Insert;
+                app.clear_error_message();
+            }
             KeyCode::Char('h') => {
                 app.state.show_help = !app.state.show_help;
             }
@@ -105,8 +110,8 @@ impl EventHandler {
                     let input_text = app.state.input_buffer.trim().to_string();
                     app.update_editing_task_field(app.state.editing_field, input_text);
 
-                    // Move to next field (0: title, 1: description)
-                    app.state.editing_field = (app.state.editing_field + 1) % 2;
+                    // Move to next field (0: title, 1: description, 2: due, 3: defer_until)
+                    app.state.editing_field = (app.state.editing_field + 1) % 4;
 
                     // Load the new field's content into input buffer
                     let field_content = app.get_editing_task_field(app.state.editing_field);
@@ -120,7 +125,11 @@ impl EventHandler {
                     app.update_editing_task_field(app.state.editing_field, input_text);
 
                     // Move to previous field
-                    app.state.editing_field = if app.state.editing_field == 0 { 1 } else { 0 };
+                    app.state.editing_field = if app.state.editing_field == 0 {
+                        3
+                    } else {
+                        app.state.editing_field - 1
+                    };
 
                     // Load the new field's content into input buffer
                     let field_content = app.get_editing_task_field(app.state.editing_field);
