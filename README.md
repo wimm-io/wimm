@@ -5,7 +5,7 @@ A fast, efficient terminal-based task manager built in Rust with comprehensive t
 ![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=for-the-badge&logo=rust&logoColor=white)
 ![Coverage](https://img.shields.io/badge/coverage-62.59%25-brightgreen?style=for-the-badge)
 ![Tests](https://img.shields.io/badge/tests-130%20passing-brightgreen?style=for-the-badge)
-![CI](https://img.shields.io/github/actions/workflow/status/username/wimm/rust.yml?style=for-the-badge)
+![CI](https://img.shields.io/github/actions/workflow/status/wimm-io/wimm/rust.yml?style=for-the-badge)
 
 ## 🚀 Features
 
