@@ -14,10 +14,9 @@ impl LayoutManager {
             Constraint::Length(1), // Title
             Constraint::Min(1),    // Main content
             Constraint::Length(1), // Status
-            Constraint::Length(1), // Input
         ]);
 
-        let [title_area, main_area, status_area, input_area] = main_layout.areas(area);
+        let [title_area, main_area, status_area] = main_layout.areas(area);
 
         let help_area = if app_state.show_help {
             Some(self.calculate_floating_help(area))
@@ -29,7 +28,6 @@ impl LayoutManager {
             title: title_area,
             main: main_area,
             status: status_area,
-            input: input_area,
             help: help_area,
         }
     }
@@ -55,7 +53,6 @@ pub struct MainLayout {
     pub title: Rect,
     pub main: Rect,
     pub status: Rect,
-    pub input: Rect,
     pub help: Option<Rect>,
 }
 

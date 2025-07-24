@@ -4,13 +4,13 @@ use crate::{
     storage::{Db, DbError},
     types::{AppState, Task},
 };
-use ratatui::widgets::ListState;
+use ratatui::widgets::TableState;
 use uuid::Uuid;
 
 pub struct App<D: Db> {
     pub state: AppState<D>,
     pub message: Option<String>,
-    pub task_list_state: ListState,
+    pub task_list_state: TableState,
     task_selection: HashSet<usize>,
 }
 
@@ -19,7 +19,7 @@ impl<D: Db> App<D> {
         Self {
             state,
             message: None,
-            task_list_state: ListState::default(),
+            task_list_state: TableState::default(),
             task_selection: HashSet::default(),
         }
     }
@@ -153,12 +153,12 @@ impl<D: Db> App<D> {
         }
     }
 
-    pub fn is_task_selected(&self, index: usize) -> bool {
-        self.task_selection.contains(&index)
+    pub fn task_list_state(&mut self) -> &mut TableState {
+        &mut self.task_list_state
     }
 
-    pub fn task_list_state(&mut self) -> &mut ListState {
-        &mut self.task_list_state
+    pub fn get_task_selection(&self) -> &HashSet<usize> {
+        &self.task_selection
     }
 
     pub fn create_task_below_cursor(&mut self) {

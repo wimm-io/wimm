@@ -65,12 +65,14 @@ impl HelpPanel {
                     .add_modifier(Modifier::BOLD),
             )]),
             Line::from(""),
-            Line::from("  Type    - Add to current field"),
-            Line::from("  Tab     - Next field"),
-            Line::from("  S+Tab   - Previous field"),
-            Line::from("  Enter   - Save task"),
+            Line::from("  Type    - Edit current field in-place"),
+            Line::from("  Tab     - Next field (Title → Description)"),
+            Line::from("  S+Tab   - Previous field (Description → Title)"),
+            Line::from("  Enter   - Save task & return to Normal"),
             Line::from("  Backsp  - Delete character"),
             Line::from("  Esc     - Cancel & return to Normal"),
+            Line::from(""),
+            Line::from("Fields are highlighted in yellow when editing."),
             Line::from(""),
         ]
     }

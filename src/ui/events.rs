@@ -30,11 +30,17 @@ impl EventHandler {
                 app.create_task_below_cursor();
                 app.state.mode = Mode::Insert;
                 app.clear_error_message();
+                // Load the current field content into input buffer
+                let field_content = app.get_editing_task_field(app.state.editing_field);
+                app.state.input_buffer = field_content;
             }
             KeyCode::Char('O') => {
                 app.create_task_above_cursor();
                 app.state.mode = Mode::Insert;
                 app.clear_error_message();
+                // Load the current field content into input buffer
+                let field_content = app.get_editing_task_field(app.state.editing_field);
+                app.state.input_buffer = field_content;
             }
             KeyCode::Char('h') => {
                 app.state.show_help = !app.state.show_help;
@@ -46,8 +52,6 @@ impl EventHandler {
             KeyCode::Char('!') => {
                 if let Err(e) = app.toggle_task_completion() {
                     app.set_error_message(format!("Error updating task: {e}"));
-                } else {
-                    app.cursor_first_task();
                 }
             }
             KeyCode::Char('x') => app.toggle_task_selection(),

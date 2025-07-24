@@ -19,10 +19,10 @@ Wimm is a terminal-based task management application built in Rust using the Rat
 │  │ Controller  │  │   Handler   │  │   Manager   │              │
 │  └─────────────┘  └─────────────┘  └─────────────┘              │
 │                                                                 │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │
-│  │     App     │  │ Input Bar   │  │ Help Panel  │              │
-│  │ Controller  │  │   Widget    │  │   Widget    │              │
-│  └─────────────┘  └─────────────┘  └─────────────┘              │
+│  ┌─────────────┐  ┌─────────────┐                               │
+│  │     App     │  │ Help Panel  │                               │
+│  │ Controller  │  │   Widget    │                               │
+│  └─────────────┘  └─────────────┘                               │
 └─────────────────────────┬───────────────────────────────────────┘
                           │
 ┌─────────────────────────▼───────────────────────────────────────┐
@@ -76,7 +76,7 @@ The UI layer implements a centralized rendering approach with integrated task li
 - Orchestrates all UI components and rendering
 - Manages the main application loop
 - Handles terminal initialization and cleanup
-- Integrates task list rendering directly (not as separate widget)
+- Integrates table-based task list rendering with in-place editing
 - Coordinates between App controller and UI widgets
 
 **`App` (Application Controller)**
@@ -85,8 +85,10 @@ The UI layer implements a centralized rendering approach with integrated task li
 - Handles task operations (add, delete, toggle completion)
 - Manages task selection state with multi-select support
 - Coordinates storage synchronization
-- Manages input buffer and mode transitions
-- Provides cursor navigation for task list
+- Manages input buffer and in-place field editing
+- Provides cursor navigation for table-based task list
+- Supports creating tasks above/below current cursor position
+- Manages multi-field editing state with field navigation
 
 **`EventHandler`**
 
@@ -97,18 +99,13 @@ The UI layer implements a centralized rendering approach with integrated task li
 
 **`LayoutManager`**
 
-- Calculates screen layout areas with vertical constraints
+- Calculates screen layout areas with vertical constraints (title, main, status)
 - Handles floating panel positioning for help overlay
 - Manages responsive layout adjustments
+- Removed input area to provide more space for table view
 - Provides structured layout areas for consistent rendering
 
 #### UI Widgets:
-
-**`InputBar`**
-
-- Displays input prompt in Insert mode with real-time feedback
-- Shows error messages in Normal mode
-- Handles mode-specific rendering and content display
 
 **`HelpPanel`**
 
@@ -126,11 +123,12 @@ The UI layer implements a centralized rendering approach with integrated task li
 - Manages application state transitions and defaults
 - Supports generic storage backend through type parameters
 
-**`TaskManager` (Placeholder)**
+**Task Management (Integrated)**
 
-- Future implementation for advanced task business logic
-- Will handle task creation, updates, and queries
-- Planned for complex task operations and filtering
+- Task business logic integrated directly into App controller
+- Handles task creation, updates, and queries through App methods
+- Supports in-place editing with field-specific operations
+- Manages task positioning and cursor-relative creation
 
 **`TimeTracker` (Placeholder)**
 
@@ -340,6 +338,33 @@ The application supports both single cursor navigation and multi-task selection:
 - **Cursor Navigation**: `j/k` for up/down, `g/G` for first/last
 - **Multi-Selection**: `x` to toggle individual task selection
 - **Operations**: Work on either cursor position or selected tasks
+
+## Table-Based Editing System
+
+### In-Place Field Editing
+
+The UI implements a table-based task display with in-place editing capabilities:
+
+**Table Structure**
+
+- **Status Column**: Shows completion state `[x]` or `[ ]`
+- **Title Column**: Displays and allows editing of task titles (40% width)
+- **Description Column**: Displays and allows editing of task descriptions (55% width)
+
+**Editing Workflow**
+
+- **Task Creation**: `o`/`O` keys create new tasks below/above current cursor
+- **Field Navigation**: `Tab`/`Shift+Tab` moves between Title and Description fields
+- **Visual Feedback**: Active editing field highlighted with yellow background
+- **State Management**: Editing task state preserved during field navigation
+- **Save/Cancel**: `Enter` saves changes, `Esc` cancels and returns to Normal mode
+
+**Display Logic**
+
+- **Normal Mode**: Shows task data from main task list
+- **Edit Mode**: Shows current editing task state with field-specific highlighting
+- **Row Selection**: Selected tasks highlighted with blue background
+- **Multi-Selection**: Selected tasks highlighted with dark gray background
 - **Visual Feedback**: Selected tasks highlighted with different background
 
 ### Selection Iterator
