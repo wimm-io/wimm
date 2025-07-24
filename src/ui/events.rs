@@ -169,7 +169,7 @@ mod tests {
         Task {
             id: id.to_string(),
             title: title.to_string(),
-            description: format!("Description for {}", title),
+            description: format!("Description for {title}"),
             completed: false,
             created_at: SystemTime::now(),
             due: None,
@@ -190,14 +190,14 @@ mod tests {
     fn test_event_handler_new() {
         let _handler = EventHandler::new();
         // Just verify it creates successfully
-        assert!(true);
+        // Test passes if creation succeeds without panic
     }
 
     #[test]
     fn test_event_handler_default() {
-        let _handler = EventHandler::default();
+        let _handler = EventHandler;
         // Just verify it creates successfully
-        assert!(true);
+        // Test passes if creation succeeds without panic
     }
 
     #[test]
@@ -205,12 +205,12 @@ mod tests {
         let handler = EventHandler::new();
         let mut app = create_test_app();
 
-        assert_eq!(app.state.should_quit, false);
+        assert!(!app.state.should_quit);
 
         let event = create_key_event(KeyCode::Char('q'));
         handler.handle_event(event, &mut app);
 
-        assert_eq!(app.state.should_quit, true);
+        assert!(app.state.should_quit);
     }
 
     #[test]
@@ -218,17 +218,17 @@ mod tests {
         let handler = EventHandler::new();
         let mut app = create_test_app();
 
-        assert_eq!(app.state.show_help, false);
+        assert!(!app.state.show_help);
 
         let event = create_key_event(KeyCode::Char('h'));
         handler.handle_event(event, &mut app);
 
-        assert_eq!(app.state.show_help, true);
+        assert!(app.state.show_help);
 
         // Toggle again
         let event = create_key_event(KeyCode::Char('h'));
         handler.handle_event(event, &mut app);
-        assert_eq!(app.state.show_help, false);
+        assert!(!app.state.show_help);
     }
 
     #[test]
@@ -447,7 +447,7 @@ mod tests {
         handler.handle_event(event, &mut app);
 
         // All should execute without panicking
-        assert!(true);
+        // Test passes if no panic occurs
     }
 
     #[test]
@@ -463,7 +463,7 @@ mod tests {
         handler.handle_event(event, &mut app);
 
         // Should execute without panicking
-        assert!(true);
+        // Test passes if no panic occurs
     }
 
     #[test]
@@ -475,7 +475,7 @@ mod tests {
         handler.handle_event(event, &mut app);
 
         // Should execute without panicking
-        assert!(true);
+        // Test passes if no panic occurs
     }
 
     #[test]
@@ -487,7 +487,7 @@ mod tests {
         handler.handle_event(event, &mut app);
 
         // Should execute without panicking
-        assert!(true);
+        // Test passes if no panic occurs
     }
 
     #[test]

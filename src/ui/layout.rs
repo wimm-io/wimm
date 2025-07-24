@@ -77,15 +77,13 @@ mod tests {
     #[test]
     fn test_layout_manager_new() {
         let _manager = LayoutManager::new();
-        // Just verify it creates successfully
-        assert!(true);
+        // Test passes if creation succeeds without panic
     }
 
     #[test]
     fn test_layout_manager_default() {
-        let _manager = LayoutManager::default();
-        // Just verify it creates successfully
-        assert!(true);
+        let _manager = LayoutManager;
+        // Test passes if creation succeeds without panic
     }
 
     #[test]

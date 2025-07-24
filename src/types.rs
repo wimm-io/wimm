@@ -115,7 +115,7 @@ mod tests {
         Task {
             id: id.to_string(),
             title: title.to_string(),
-            description: format!("Description for {}", title),
+            description: format!("Description for {title}"),
             completed: false,
             created_at: SystemTime::now(),
             due: None,
@@ -153,7 +153,7 @@ mod tests {
         assert_eq!(task.id, "test123");
         assert_eq!(task.title, "Test Task");
         assert_eq!(task.description, "This is a test task");
-        assert_eq!(task.completed, false);
+        assert!(!task.completed);
         assert_eq!(task.created_at, now);
         assert!(task.due.is_none());
         assert!(task.defer_until.is_none());
@@ -175,7 +175,7 @@ mod tests {
             defer_until: Some(defer_date),
         };
 
-        assert_eq!(task.completed, true);
+        assert!(task.completed);
         assert_eq!(task.due, Some(due_date));
         assert_eq!(task.defer_until, Some(defer_date));
     }
@@ -215,9 +215,9 @@ mod tests {
         let app_state = AppState::new(store);
 
         assert_eq!(app_state.mode, Mode::Normal);
-        assert_eq!(app_state.should_quit, false);
+        assert!(!app_state.should_quit);
         assert!(app_state.input_buffer.is_empty());
-        assert_eq!(app_state.show_help, false);
+        assert!(!app_state.show_help);
         assert!(app_state.tasks.is_empty());
         assert!(app_state.editing_task.is_none());
         assert_eq!(app_state.editing_field, 0);
@@ -228,9 +228,9 @@ mod tests {
         let app_state = AppState::default();
 
         assert_eq!(app_state.mode, Mode::Normal);
-        assert_eq!(app_state.should_quit, false);
+        assert!(!app_state.should_quit);
         assert!(app_state.input_buffer.is_empty());
-        assert_eq!(app_state.show_help, false);
+        assert!(!app_state.show_help);
         assert!(app_state.tasks.is_empty());
         assert!(app_state.editing_task.is_none());
         assert_eq!(app_state.editing_field, 0);
@@ -300,14 +300,14 @@ mod tests {
         let store = MemoryStorage::new(HashMap::new());
         let mut app_state = AppState::new(store);
 
-        assert_eq!(app_state.should_quit, false);
-        assert_eq!(app_state.show_help, false);
+        assert!(!app_state.should_quit);
+        assert!(!app_state.show_help);
 
         app_state.should_quit = true;
         app_state.show_help = true;
 
-        assert_eq!(app_state.should_quit, true);
-        assert_eq!(app_state.show_help, true);
+        assert!(app_state.should_quit);
+        assert!(app_state.show_help);
     }
 
     #[test]
@@ -316,8 +316,8 @@ mod tests {
 
         // Test that default values are correct
         assert_eq!(app_state.mode, Mode::Normal);
-        assert_eq!(app_state.should_quit, false);
-        assert_eq!(app_state.show_help, false);
+        assert!(!app_state.should_quit);
+        assert!(!app_state.show_help);
         assert!(app_state.input_buffer.is_empty());
         assert!(app_state.tasks.is_empty());
         assert_eq!(app_state.editing_field, 0);

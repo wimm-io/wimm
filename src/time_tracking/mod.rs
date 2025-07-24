@@ -151,15 +151,13 @@ mod tests {
     #[test]
     fn test_time_tracker_new() {
         let _tracker = TimeTracker::new();
-        // Since the methods are todo!(), we can only test creation
-        assert!(true); // Just verify it compiles and creates
+        // Test passes if creation succeeds without panic
     }
 
     #[test]
     fn test_time_tracker_default() {
-        let _tracker = TimeTracker::default();
-        // Since the methods are todo!(), we can only test creation
-        assert!(true); // Just verify it compiles and creates
+        let _tracker = TimeTracker;
+        // Test passes if creation succeeds without panic
     }
 
     #[test]
@@ -274,7 +272,7 @@ mod tests {
     #[test]
     fn test_time_entry_debug_format() {
         let entry = TimeEntry::new("debug_test".to_string());
-        let debug_str = format!("{:?}", entry);
+        let debug_str = format!("{entry:?}");
 
         assert!(debug_str.contains("TimeEntry"));
         assert!(debug_str.contains("debug_test"));

@@ -221,7 +221,7 @@ mod tests {
         Task {
             id: id.to_string(),
             title: title.to_string(),
-            description: format!("Description for {}", title),
+            description: format!("Description for {title}"),
             completed: false,
             created_at: SystemTime::now(),
             due: None,
@@ -233,22 +233,22 @@ mod tests {
     fn test_db_error_display() {
         let connection_error = DbError::ConnectionError("connection failed".to_string());
         assert_eq!(
-            format!("{}", connection_error),
+            format!("{connection_error}"),
             "Database connection error: connection failed"
         );
 
         let serde_error = DbError::SerdeError("serialization failed".to_string());
         assert_eq!(
-            format!("{}", serde_error),
+            format!("{serde_error}"),
             "Serialization/Deserialization error: serialization failed"
         );
 
         let not_found_error = DbError::NotFound("task123".to_string());
-        assert_eq!(format!("{}", not_found_error), "Task not found: task123");
+        assert_eq!(format!("{not_found_error}"), "Task not found: task123");
 
         let operation_error = DbError::OperationFailed("operation failed".to_string());
         assert_eq!(
-            format!("{}", operation_error),
+            format!("{operation_error}"),
             "Database operation failed: operation failed"
         );
     }
@@ -334,7 +334,7 @@ mod tests {
             let loaded_tasks = storage.load_tasks().unwrap();
             assert_eq!(loaded_tasks.len(), 1);
             assert_eq!(loaded_tasks[0].title, "Updated Task");
-            assert_eq!(loaded_tasks[0].completed, true);
+            assert!(loaded_tasks[0].completed);
         }
 
         #[test]
@@ -537,7 +537,7 @@ mod tests {
             let loaded_tasks = storage.load_tasks().unwrap();
             assert_eq!(loaded_tasks.len(), 1);
             assert_eq!(loaded_tasks[0].title, "Updated Task");
-            assert_eq!(loaded_tasks[0].completed, true);
+            assert!(loaded_tasks[0].completed);
         }
     }
 }

@@ -15,7 +15,7 @@ fn create_test_task(id: &str, title: &str) -> Task {
     Task {
         id: id.to_string(),
         title: title.to_string(),
-        description: format!("Description for {}", title),
+        description: format!("Description for {title}"),
         completed: false,
         created_at: SystemTime::now(),
         due: None,
@@ -280,7 +280,7 @@ fn test_app_state_properties_integration() {
     // Test that properties are set correctly
     assert_eq!(app_state.mode, Mode::Insert);
     assert_eq!(app_state.input_buffer, "test input");
-    assert_eq!(app_state.show_help, true);
+    assert!(app_state.show_help);
     assert_eq!(app_state.tasks.len(), 1);
     assert_eq!(app_state.tasks[0].title, "Task 1");
 }
@@ -376,7 +376,7 @@ fn test_full_workflow_integration() {
     handler.handle_event(delete_event, &mut app);
 
     // The workflow completed successfully if we reach here
-    assert!(true);
+    // Test passes if no panic occurs
 }
 
 #[test]
@@ -401,9 +401,9 @@ fn test_date_parsing_integration() {
     for (input, should_parse) in test_cases {
         let result = app.parse_date_input(input, true);
         if should_parse {
-            assert!(result.is_some(), "Failed to parse: {}", input);
+            assert!(result.is_some(), "Failed to parse: {input}");
         } else {
-            assert!(result.is_none(), "Should not parse: {}", input);
+            assert!(result.is_none(), "Should not parse: {input}");
         }
     }
 }
@@ -433,7 +433,7 @@ fn test_error_handling_integration() {
     handler.handle_event(toggle_event, &mut app);
 
     // These should not panic
-    assert!(true);
+    // Test passes if no panic occurs
 }
 
 #[test]

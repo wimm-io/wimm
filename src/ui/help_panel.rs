@@ -137,14 +137,14 @@ mod tests {
     fn test_help_panel_new() {
         let _panel = HelpPanel::new();
         // Just verify it creates successfully
-        assert!(true);
+        // Test passes if creation succeeds without panic
     }
 
     #[test]
     fn test_help_panel_default() {
-        let _panel = HelpPanel::default();
+        let _panel = HelpPanel;
         // Just verify it creates successfully
-        assert!(true);
+        // Test passes if creation succeeds without panic
     }
 
     #[test]
@@ -321,7 +321,7 @@ mod tests {
             .unwrap();
 
         // If we get here without panicking, the render worked
-        assert!(true);
+        // Test passes if no panic occurs
     }
 
     #[test]
@@ -338,7 +338,7 @@ mod tests {
             .unwrap();
 
         // Should handle small areas gracefully
-        assert!(true);
+        // Test passes if no panic occurs
     }
 
     #[test]
@@ -355,6 +355,6 @@ mod tests {
             .unwrap();
 
         // Should handle full screen rendering
-        assert!(true);
+        // Test passes if no panic occurs
     }
 }

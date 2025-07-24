@@ -52,23 +52,23 @@ mod tests {
     fn test_input_handler_new() {
         let _handler = InputHandler::new();
         // Just verify it creates successfully
-        assert!(true);
+        // Test passes if creation succeeds without panic
     }
 
     #[test]
     fn test_input_handler_default() {
-        let _handler = InputHandler::default();
+        let _handler = InputHandler;
         // Just verify it creates successfully
-        assert!(true);
+        // Test passes if creation succeeds without panic
     }
 
     #[test]
     fn test_input_handler_struct_exists() {
         // Verify the struct can be instantiated
         let _handler1 = InputHandler::new();
-        let _handler2 = InputHandler::default();
+        let _handler2 = InputHandler;
 
         // Both should create the same type of struct
-        assert!(true);
+        // Test passes if creation succeeds without panic
     }
 }

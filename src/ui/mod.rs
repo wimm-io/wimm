@@ -59,11 +59,11 @@ fn format_time_relative(time: SystemTime) -> String {
             let minutes = (secs % 3600) / 60;
 
             if days > 0 {
-                format!("{}d ago", days)
+                format!("{days}d ago")
             } else if hours > 0 {
-                format!("{}h ago", hours)
+                format!("{hours}h ago")
             } else if minutes > 0 {
-                format!("{}m ago", minutes)
+                format!("{minutes}m ago")
             } else {
                 "now".to_string()
             }
@@ -78,11 +78,11 @@ fn format_time_relative(time: SystemTime) -> String {
                     let minutes = (secs % 3600) / 60;
 
                     if days > 0 {
-                        format!("in {}d", days)
+                        format!("in {days}d")
                     } else if hours > 0 {
-                        format!("in {}h", hours)
+                        format!("in {hours}h")
                     } else if minutes > 0 {
-                        format!("in {}m", minutes)
+                        format!("in {minutes}m")
                     } else {
                         "now".to_string()
                     }
@@ -121,9 +121,9 @@ fn format_created_at(time: SystemTime) -> String {
             // For tasks created within the last day, show relative time
             if days == 0 {
                 if hours > 0 {
-                    format!("{}h ago", hours)
+                    format!("{hours}h ago")
                 } else if minutes > 0 {
-                    format!("{}m ago", minutes)
+                    format!("{minutes}m ago")
                 } else {
                     "now".to_string()
                 }
@@ -300,14 +300,14 @@ impl<D: Db> Ui<D> {
                         3 => "Defer Until",
                         _ => "Unknown",
                     };
-                    format!("INSERT - Editing: {}", field_name)
+                    format!("INSERT - Editing: {field_name}")
                 } else {
                     "INSERT".to_string()
                 }
             }
         };
 
-        let status = format!("Mode: {}", mode_text);
+        let status = format!("Mode: {mode_text}");
         let status_paragraph = Paragraph::new(status).alignment(Alignment::Left);
         f.render_widget(status_paragraph, area);
     }
@@ -467,7 +467,7 @@ impl<D: Db> Ui<D> {
         .block(
             Block::bordered()
                 .padding(Padding::uniform(1))
-                .title(Line::from(format!(" Tasks ({}) ", task_count))),
+                .title(Line::from(format!(" Tasks ({task_count}) "))),
         )
         .highlight_symbol("> ");
 

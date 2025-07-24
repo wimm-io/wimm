@@ -129,8 +129,7 @@ impl<D: Db> App<D> {
         }
 
         // Handle "next weekday"
-        if input.starts_with("next ") {
-            let weekday_part = &input[5..];
+        if let Some(weekday_part) = input.strip_prefix("next ") {
             if let Some(target_weekday) = self.parse_weekday(weekday_part) {
                 let current_weekday = local_now.weekday();
                 let days_ahead = (target_weekday.num_days_from_monday() as i64
@@ -203,19 +202,22 @@ impl<D: Db> App<D> {
                     let days = duration.as_secs() / (24 * 60 * 60);
                     let hours = (duration.as_secs() % (24 * 60 * 60)) / (60 * 60);
                     if days > 0 {
-                        format!("{}d", days)
+                        format!("{days}d")
                     } else if hours > 0 {
-                        format!("{}h", hours)
+                        format!("{hours}h")
                     } else {
                         "1h".to_string()
                     }
                 } else if let Ok(duration) = now.duration_since(t) {
                     // Past date - show negative
                     let days = duration.as_secs() / (24 * 60 * 60);
+                    let hours = (duration.as_secs() % (24 * 60 * 60)) / (60 * 60);
                     if days > 0 {
-                        format!("-{}d", days)
+                        format!("-{days}d")
+                    } else if hours > 0 {
+                        format!("-{hours}h")
                     } else {
-                        "0d".to_string()
+                        "now".to_string()
                     }
                 } else {
                     "0d".to_string()
@@ -248,7 +250,7 @@ impl<D: Db> App<D> {
             }
         }
         self.sync_to_storage().unwrap_or_else(|e| {
-            self.set_error_message(format!("Error syncing tasks: {}", e));
+            self.set_error_message(format!("Error syncing tasks: {e}"));
         });
         self.clear_task_selection();
     }
@@ -399,6 +401,24 @@ impl<D: Db> App<D> {
     }
 }
 
+pub enum SelectionIterator<'a> {
+    Multiple(std::collections::hash_set::Iter<'a, usize>),
+    Single(std::iter::Once<usize>),
+    Empty,
+}
+
+impl<'a> Iterator for SelectionIterator<'a> {
+    type Item = usize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            SelectionIterator::Multiple(iter) => iter.next().copied(),
+            SelectionIterator::Single(iter) => iter.next(),
+            SelectionIterator::Empty => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -543,24 +563,6 @@ mod tests {
             assert_eq!(dt.hour(), 8);
         } else {
             panic!("Failed to parse defer date");
-        }
-    }
-}
-
-pub enum SelectionIterator<'a> {
-    Multiple(std::collections::hash_set::Iter<'a, usize>),
-    Single(std::iter::Once<usize>),
-    Empty,
-}
-
-impl<'a> Iterator for SelectionIterator<'a> {
-    type Item = usize;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            SelectionIterator::Multiple(iter) => iter.next().copied(),
-            SelectionIterator::Single(iter) => iter.next(),
-            SelectionIterator::Empty => None,
         }
     }
 }
