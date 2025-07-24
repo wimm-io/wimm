@@ -1,6 +1,6 @@
 use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::layout::Rect;
-use ratatui::{Terminal, backend::TestBackend};
+use ratatui::{backend::TestBackend, Terminal};
 use std::collections::HashMap;
 use std::time::SystemTime;
 use tempfile::TempDir;

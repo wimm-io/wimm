@@ -12,12 +12,12 @@
 //! with separate modules for different UI concerns.
 
 use chrono::{DateTime, Local};
-use ratatui::Frame;
 use ratatui::crossterm::event;
 use ratatui::layout::Constraint;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Cell, Padding, Row, Table};
+use ratatui::Frame;
 use std::collections::HashSet;
 use std::time::SystemTime;
 use thiserror::Error;

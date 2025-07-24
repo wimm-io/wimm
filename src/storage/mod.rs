@@ -296,16 +296,12 @@ mod tests {
             let loaded_tasks = storage.load_tasks().unwrap();
 
             assert_eq!(loaded_tasks.len(), 2);
-            assert!(
-                loaded_tasks
-                    .iter()
-                    .any(|t| t.id == "1" && t.title == "Task 1")
-            );
-            assert!(
-                loaded_tasks
-                    .iter()
-                    .any(|t| t.id == "2" && t.title == "Task 2")
-            );
+            assert!(loaded_tasks
+                .iter()
+                .any(|t| t.id == "1" && t.title == "Task 1"));
+            assert!(loaded_tasks
+                .iter()
+                .any(|t| t.id == "2" && t.title == "Task 2"));
         }
 
         #[test]

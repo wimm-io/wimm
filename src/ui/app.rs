@@ -494,14 +494,13 @@ mod tests {
 
         // Test setting defer_until date
         app.update_editing_task_field(3, "2h".to_string());
-        assert!(
-            app.state
-                .editing_task
-                .as_ref()
-                .unwrap()
-                .defer_until
-                .is_some()
-        );
+        assert!(app
+            .state
+            .editing_task
+            .as_ref()
+            .unwrap()
+            .defer_until
+            .is_some());
 
         // Test clearing dates
         app.update_editing_task_field(2, "".to_string());

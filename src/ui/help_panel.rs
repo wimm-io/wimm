@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::Rect,
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph, Wrap},
+    Frame,
 };
 
 pub struct HelpPanel;
@@ -131,7 +131,7 @@ impl Default for HelpPanel {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ratatui::{Terminal, backend::TestBackend, layout::Rect};
+    use ratatui::{backend::TestBackend, layout::Rect, Terminal};
 
     #[test]
     fn test_help_panel_new() {
