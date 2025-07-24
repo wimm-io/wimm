@@ -119,7 +119,7 @@ coverage-open:
 		MIN_COVERAGE=$(MIN_COVERAGE) $(COVERAGE_SCRIPT) --open; \
 	else \
 		$(CARGO) tarpaulin --exclude-files "src/main.rs" --out Html; \
-		@if [ -f "tarpaulin-report.html" ]; then \
+		if [ -f "tarpaulin-report.html" ]; then \
 			if command -v xdg-open >/dev/null 2>&1; then \
 				xdg-open tarpaulin-report.html; \
 			elif command -v open >/dev/null 2>&1; then \
