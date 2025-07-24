@@ -42,7 +42,7 @@ fn main() {
     // Handle subcommands first
     if let Some(command) = &cli.command {
         if let Err(e) = handle_command(command, &cli) {
-            eprintln!("Error: {}", e);
+            eprintln!("Error: {e}");
             process::exit(1);
         }
         return;
@@ -53,8 +53,7 @@ fn main() {
         Ok(config) => config,
         Err(e) => {
             eprintln!(
-                "Warning: Could not load configuration: {}. Using defaults.",
-                e
+                "Warning: Could not load configuration: {e}. Using defaults."
             );
             Config::default()
         }
@@ -124,7 +123,7 @@ fn handle_config_command(
             println!("  Default defer hour: {}", config.time.defer_hour);
             println!("  Default due hour: {}", config.time.due_hour);
             if let Some(ref tz) = config.time.timezone {
-                println!("  Timezone: {}", tz);
+                println!("  Timezone: {tz}");
             } else {
                 println!("  Timezone: (system default)");
             }
@@ -138,7 +137,7 @@ fn handle_config_command(
                 } else {
                     ""
                 };
-                println!("  {}{}", scheme, marker);
+                println!("  {scheme}{marker}");
             }
         }
         ConfigAction::ListKeymaps => {
@@ -150,7 +149,7 @@ fn handle_config_command(
                 } else {
                     ""
                 };
-                println!("  {}{}", keymap, marker);
+                println!("  {keymap}{marker}");
             }
         }
         ConfigAction::Set {
@@ -170,15 +169,15 @@ fn handle_config_command(
                     "color-scheme" | "colors" => {
                         config
                             .set_color_scheme(v)
-                            .map_err(|e| format!("Failed to set color scheme: {}", e))?;
-                        println!("Configuration updated: {} = {}", k, v);
+                            .map_err(|e| format!("Failed to set color scheme: {e}"))?;
+                        println!("Configuration updated: {k} = {v}");
                         changes_made = true;
                     }
                     "keymap" => {
                         config
                             .set_keymap(v)
-                            .map_err(|e| format!("Failed to set keymap: {}", e))?;
-                        println!("Configuration updated: {} = {}", k, v);
+                            .map_err(|e| format!("Failed to set keymap: {e}"))?;
+                        println!("Configuration updated: {k} = {v}");
                         changes_made = true;
                     }
                     "defer-hour" => {
@@ -189,7 +188,7 @@ fn handle_config_command(
                             return Err("Defer hour must be between 0 and 23".into());
                         }
                         config.time.defer_hour = hour;
-                        println!("Configuration updated: {} = {}", k, v);
+                        println!("Configuration updated: {k} = {v}");
                         changes_made = true;
                     }
                     "due-hour" => {
@@ -200,7 +199,7 @@ fn handle_config_command(
                             return Err("Due hour must be between 0 and 23".into());
                         }
                         config.time.due_hour = hour;
-                        println!("Configuration updated: {} = {}", k, v);
+                        println!("Configuration updated: {k} = {v}");
                         changes_made = true;
                     }
                     "timezone" => {
@@ -209,11 +208,11 @@ fn handle_config_command(
                         } else {
                             Some(v.clone())
                         };
-                        println!("Configuration updated: {} = {}", k, v);
+                        println!("Configuration updated: {k} = {v}");
                         changes_made = true;
                     }
                     _ => {
-                        return Err(format!("Unknown configuration key: {}. Available keys: color-scheme, keymap, defer-hour, due-hour, timezone", k).into());
+                        return Err(format!("Unknown configuration key: {k}. Available keys: color-scheme, keymap, defer-hour, due-hour, timezone").into());
                     }
                 }
             }
@@ -222,16 +221,16 @@ fn handle_config_command(
             if let Some(scheme) = color_scheme {
                 config
                     .set_color_scheme(scheme)
-                    .map_err(|e| format!("Failed to set color scheme: {}", e))?;
-                println!("Configuration updated: color-scheme = {}", scheme);
+                    .map_err(|e| format!("Failed to set color scheme: {e}"))?;
+                println!("Configuration updated: color-scheme = {scheme}");
                 changes_made = true;
             }
 
             if let Some(km) = keymap {
                 config
                     .set_keymap(km)
-                    .map_err(|e| format!("Failed to set keymap: {}", e))?;
-                println!("Configuration updated: keymap = {}", km);
+                    .map_err(|e| format!("Failed to set keymap: {e}"))?;
+                println!("Configuration updated: keymap = {km}");
                 changes_made = true;
             }
 
@@ -240,7 +239,7 @@ fn handle_config_command(
                     return Err("Defer hour must be between 0 and 23".into());
                 }
                 config.time.defer_hour = *hour;
-                println!("Configuration updated: defer-hour = {}", hour);
+                println!("Configuration updated: defer-hour = {hour}");
                 changes_made = true;
             }
 
@@ -249,7 +248,7 @@ fn handle_config_command(
                     return Err("Due hour must be between 0 and 23".into());
                 }
                 config.time.due_hour = *hour;
-                println!("Configuration updated: due-hour = {}", hour);
+                println!("Configuration updated: due-hour = {hour}");
                 changes_made = true;
             }
 
@@ -299,7 +298,7 @@ fn handle_config_command(
                 .status()?;
 
             if !status.success() {
-                return Err(format!("Editor '{}' exited with non-zero status", editor).into());
+                return Err(format!("Editor '{editor}' exited with non-zero status").into());
             }
 
             if cli.verbose {

@@ -138,23 +138,22 @@ impl TimeDefaults {
     pub fn time_today(&self, hour: u32) -> Result<DateTime<Local>, ConfigError> {
         if hour > 23 {
             return Err(ConfigError::InvalidTime(format!(
-                "Hour {} is invalid (must be 0-23)",
-                hour
+                "Hour {hour} is invalid (must be 0-23)"
             )));
         }
 
         let time = NaiveTime::from_hms_opt(hour, 0, 0)
-            .ok_or_else(|| ConfigError::InvalidTime(format!("Invalid time: {}:00:00", hour)))?;
+            .ok_or_else(|| ConfigError::InvalidTime(format!("Invalid time: {hour}:00:00")))?;
 
         let today = Local::now().date_naive();
         let datetime = today.and_time(time);
 
-        Ok(Local
+        Local
             .from_local_datetime(&datetime)
             .single()
             .ok_or_else(|| {
                 ConfigError::InvalidTime("Could not create local datetime".to_string())
-            })?)
+            })
     }
 }
 
@@ -302,8 +301,7 @@ impl Config {
             Ok(())
         } else {
             Err(ConfigError::InvalidTime(format!(
-                "Color scheme '{}' not found",
-                name
+                "Color scheme '{name}' not found"
             )))
         }
     }
@@ -315,8 +313,7 @@ impl Config {
             Ok(())
         } else {
             Err(ConfigError::InvalidTime(format!(
-                "Keymap '{}' not found",
-                name
+                "Keymap '{name}' not found"
             )))
         }
     }
