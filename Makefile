@@ -74,8 +74,9 @@ build-release:
 clean:
 	@echo "$(BLUE)Cleaning build artifacts...$(NC)"
 	$(CARGO) clean
+	@echo "$(BLUE)Cleaning coverage reports...$(NC)"
+	rm -f cobertura.xml tarpaulin-report.html tarpaulin-report.json lcov.info
 	rm -rf target/tarpaulin
-	rm -f tarpaulin-report.html cobertura.xml tarpaulin-report.json
 
 # Testing
 test:
