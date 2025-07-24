@@ -1,0 +1,73 @@
+[report]
+# Output formats for coverage reports
+out = ["Html", "Xml", "Json"]
+
+# Coverage threshold (percentage)
+fail-under = 60
+
+# Timeout for tests (in seconds)
+timeout = 120
+
+[build]
+# Include all features when running coverage
+all-features = true
+
+# Target the entire workspace
+workspace = true
+
+# Verbose output
+verbose = true
+
+[coverage]
+# Files to exclude from coverage reporting
+exclude-files = [
+    "src/main.rs", # Main entry point - integration tested separately
+    "tests/*",     # Test files themselves
+    "examples/*",  # Example files
+    "benches/*",   # Benchmark files
+]
+
+# Lines to exclude (by pattern)
+exclude-lines = [
+    "#\\[derive\\(",  # Derived trait implementations
+    "unreachable!",   # Unreachable code markers
+    "unimplemented!", # Unimplemented placeholders
+    "todo!",          # TODO markers
+    "panic!",         # Explicit panics (some may be intentional)
+]
+
+# Count lines in doc tests
+doc = true
+
+# Include tests in coverage
+run-types = ["Tests", "Doctests"]
+
+[engine]
+# Use LLVM for more accurate coverage
+engine = "llvm"
+
+# Follow symbolic links
+follow-links = true
+
+[output]
+# Don't print per-file coverage by default (too verbose for CI)
+print-summary = true
+
+# Generate detailed HTML report
+html-report-dir = "target/tarpaulin"
+
+[advanced]
+# Forward signals to child processes
+forward-signals = true
+
+# Don't fail on orphaned processes
+ignore-panics = false
+
+# Include line coverage in output
+line = true
+
+# Include branch coverage in output
+branch = true
+
+# Post-run options
+post-run = true

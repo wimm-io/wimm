@@ -76,7 +76,11 @@ impl<D: Db> App<D> {
         self.message = None;
     }
 
-    fn parse_date_input(&self, input: &str, is_due_date: bool) -> Option<SystemTime> {
+    pub fn get_error_message(&self) -> Option<&String> {
+        self.message.as_ref()
+    }
+
+    pub fn parse_date_input(&self, input: &str, is_due_date: bool) -> Option<SystemTime> {
         let input = input.trim().to_lowercase();
         if input.is_empty() || input == "-" {
             return None;

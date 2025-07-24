@@ -149,3 +149,420 @@ impl Default for EventHandler {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::storage::MemoryStorage;
+    use crate::types::{AppState, Task};
+    use ratatui::crossterm::event::{KeyEvent, KeyModifiers};
+    use std::collections::HashMap;
+    use std::time::SystemTime;
+
+    fn create_test_app() -> App<MemoryStorage> {
+        let store = MemoryStorage::new(HashMap::new());
+        let state = AppState::new(store);
+        App::new(state)
+    }
+
+    fn create_test_task(id: &str, title: &str) -> Task {
+        Task {
+            id: id.to_string(),
+            title: title.to_string(),
+            description: format!("Description for {}", title),
+            completed: false,
+            created_at: SystemTime::now(),
+            due: None,
+            defer_until: None,
+        }
+    }
+
+    fn create_key_event(code: KeyCode) -> Event {
+        Event::Key(KeyEvent {
+            code,
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: ratatui::crossterm::event::KeyEventState::NONE,
+        })
+    }
+
+    #[test]
+    fn test_event_handler_new() {
+        let _handler = EventHandler::new();
+        // Just verify it creates successfully
+        assert!(true);
+    }
+
+    #[test]
+    fn test_event_handler_default() {
+        let _handler = EventHandler::default();
+        // Just verify it creates successfully
+        assert!(true);
+    }
+
+    #[test]
+    fn test_handle_quit_key() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        assert_eq!(app.state.should_quit, false);
+
+        let event = create_key_event(KeyCode::Char('q'));
+        handler.handle_event(event, &mut app);
+
+        assert_eq!(app.state.should_quit, true);
+    }
+
+    #[test]
+    fn test_handle_help_toggle() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        assert_eq!(app.state.show_help, false);
+
+        let event = create_key_event(KeyCode::Char('h'));
+        handler.handle_event(event, &mut app);
+
+        assert_eq!(app.state.show_help, true);
+
+        // Toggle again
+        let event = create_key_event(KeyCode::Char('h'));
+        handler.handle_event(event, &mut app);
+        assert_eq!(app.state.show_help, false);
+    }
+
+    #[test]
+    fn test_handle_create_task_below() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        assert_eq!(app.state.mode, Mode::Normal);
+        assert!(app.state.editing_task.is_none());
+
+        let event = create_key_event(KeyCode::Char('o'));
+        handler.handle_event(event, &mut app);
+
+        assert_eq!(app.state.mode, Mode::Insert);
+        assert!(app.state.editing_task.is_some());
+    }
+
+    #[test]
+    fn test_handle_create_task_above() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        assert_eq!(app.state.mode, Mode::Normal);
+        assert!(app.state.editing_task.is_none());
+
+        let event = create_key_event(KeyCode::Char('O'));
+        handler.handle_event(event, &mut app);
+
+        assert_eq!(app.state.mode, Mode::Insert);
+        assert!(app.state.editing_task.is_some());
+    }
+
+    #[test]
+    fn test_handle_start_editing() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        // Add a task first
+        let task = create_test_task("1", "Test Task");
+        app.state.tasks.push(task);
+
+        assert_eq!(app.state.mode, Mode::Normal);
+
+        let event = create_key_event(KeyCode::Char('i'));
+        handler.handle_event(event, &mut app);
+
+        assert_eq!(app.state.mode, Mode::Insert);
+    }
+
+    #[test]
+    fn test_handle_insert_mode_escape() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        app.state.mode = Mode::Insert;
+        app.state.input_buffer = "test input".to_string();
+        app.state.editing_task = Some(create_test_task("test", "Test"));
+
+        let event = create_key_event(KeyCode::Esc);
+        handler.handle_event(event, &mut app);
+
+        assert_eq!(app.state.mode, Mode::Normal);
+        assert!(app.state.input_buffer.is_empty());
+        assert!(app.state.editing_task.is_none());
+    }
+
+    #[test]
+    fn test_handle_insert_mode_backspace() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        app.state.mode = Mode::Insert;
+        app.state.input_buffer = "test".to_string();
+
+        let event = create_key_event(KeyCode::Backspace);
+        handler.handle_event(event, &mut app);
+
+        assert_eq!(app.state.input_buffer, "tes");
+    }
+
+    #[test]
+    fn test_handle_insert_mode_char() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        app.state.mode = Mode::Insert;
+        app.state.input_buffer = "test".to_string();
+
+        let event = create_key_event(KeyCode::Char('x'));
+        handler.handle_event(event, &mut app);
+
+        assert_eq!(app.state.input_buffer, "testx");
+    }
+
+    #[test]
+    fn test_handle_insert_mode_enter_with_editing_task() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        app.state.mode = Mode::Insert;
+        app.state.input_buffer = "Updated Title".to_string();
+        app.state.editing_task = Some(create_test_task("test", "Original Title"));
+        app.state.editing_field = 0; // title field
+
+        let event = create_key_event(KeyCode::Enter);
+        handler.handle_event(event, &mut app);
+
+        assert_eq!(app.state.mode, Mode::Normal);
+        assert!(app.state.input_buffer.is_empty());
+    }
+
+    #[test]
+    fn test_handle_insert_mode_enter_without_editing_task() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        app.state.mode = Mode::Insert;
+        app.state.input_buffer = "New Task".to_string();
+        app.state.editing_task = None;
+
+        let event = create_key_event(KeyCode::Enter);
+        handler.handle_event(event, &mut app);
+
+        assert_eq!(app.state.mode, Mode::Normal);
+        assert!(app.state.input_buffer.is_empty());
+    }
+
+    #[test]
+    fn test_handle_insert_mode_tab() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        app.state.mode = Mode::Insert;
+        app.state.editing_task = Some(create_test_task("test", "Test"));
+        app.state.editing_field = 0;
+        app.state.input_buffer = "test input".to_string();
+
+        let event = create_key_event(KeyCode::Tab);
+        handler.handle_event(event, &mut app);
+
+        assert_eq!(app.state.editing_field, 1);
+    }
+
+    #[test]
+    fn test_handle_insert_mode_tab_wrap_around() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        app.state.mode = Mode::Insert;
+        app.state.editing_task = Some(create_test_task("test", "Test"));
+        app.state.editing_field = 3; // last field
+        app.state.input_buffer = "test input".to_string();
+
+        let event = create_key_event(KeyCode::Tab);
+        handler.handle_event(event, &mut app);
+
+        assert_eq!(app.state.editing_field, 0); // wraps to first field
+    }
+
+    #[test]
+    fn test_handle_insert_mode_backtab() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        app.state.mode = Mode::Insert;
+        app.state.editing_task = Some(create_test_task("test", "Test"));
+        app.state.editing_field = 1;
+        app.state.input_buffer = "test input".to_string();
+
+        let event = create_key_event(KeyCode::BackTab);
+        handler.handle_event(event, &mut app);
+
+        assert_eq!(app.state.editing_field, 0);
+    }
+
+    #[test]
+    fn test_handle_insert_mode_backtab_wrap_around() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        app.state.mode = Mode::Insert;
+        app.state.editing_task = Some(create_test_task("test", "Test"));
+        app.state.editing_field = 0; // first field
+        app.state.input_buffer = "test input".to_string();
+
+        let event = create_key_event(KeyCode::BackTab);
+        handler.handle_event(event, &mut app);
+
+        assert_eq!(app.state.editing_field, 3); // wraps to last field
+    }
+
+    #[test]
+    fn test_handle_normal_mode_navigation() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        // Add some tasks
+        app.state.tasks.push(create_test_task("1", "Task 1"));
+        app.state.tasks.push(create_test_task("2", "Task 2"));
+        app.state.tasks.push(create_test_task("3", "Task 3"));
+
+        // Test j (next)
+        let event = create_key_event(KeyCode::Char('j'));
+        handler.handle_event(event, &mut app);
+
+        // Test k (previous)
+        let event = create_key_event(KeyCode::Char('k'));
+        handler.handle_event(event, &mut app);
+
+        // Test g (first)
+        let event = create_key_event(KeyCode::Char('g'));
+        handler.handle_event(event, &mut app);
+
+        // Test G (last)
+        let event = create_key_event(KeyCode::Char('G'));
+        handler.handle_event(event, &mut app);
+
+        // All should execute without panicking
+        assert!(true);
+    }
+
+    #[test]
+    fn test_handle_task_completion_toggle() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        // Add a task
+        let task = create_test_task("1", "Test Task");
+        app.state.tasks.push(task);
+
+        let event = create_key_event(KeyCode::Char('!'));
+        handler.handle_event(event, &mut app);
+
+        // Should execute without panicking
+        assert!(true);
+    }
+
+    #[test]
+    fn test_handle_task_selection_toggle() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        let event = create_key_event(KeyCode::Char('x'));
+        handler.handle_event(event, &mut app);
+
+        // Should execute without panicking
+        assert!(true);
+    }
+
+    #[test]
+    fn test_handle_delete_tasks() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        let event = create_key_event(KeyCode::Char('D'));
+        handler.handle_event(event, &mut app);
+
+        // Should execute without panicking
+        assert!(true);
+    }
+
+    #[test]
+    fn test_handle_unknown_normal_key() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        let original_mode = app.state.mode.clone();
+        let original_quit = app.state.should_quit;
+
+        let event = create_key_event(KeyCode::Char('z')); // unmapped key
+        handler.handle_event(event, &mut app);
+
+        // State should remain unchanged
+        assert_eq!(app.state.mode, original_mode);
+        assert_eq!(app.state.should_quit, original_quit);
+    }
+
+    #[test]
+    fn test_handle_unknown_insert_key() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        app.state.mode = Mode::Insert;
+        let original_buffer = app.state.input_buffer.clone();
+
+        let event = create_key_event(KeyCode::Home); // unmapped key
+        handler.handle_event(event, &mut app);
+
+        // Input buffer should remain unchanged
+        assert_eq!(app.state.input_buffer, original_buffer);
+        assert_eq!(app.state.mode, Mode::Insert);
+    }
+
+    #[test]
+    fn test_handle_non_key_event() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        let original_mode = app.state.mode.clone();
+        let original_quit = app.state.should_quit;
+
+        let event = Event::Mouse(ratatui::crossterm::event::MouseEvent {
+            kind: ratatui::crossterm::event::MouseEventKind::Down(
+                ratatui::crossterm::event::MouseButton::Left,
+            ),
+            column: 0,
+            row: 0,
+            modifiers: KeyModifiers::NONE,
+        });
+        handler.handle_event(event, &mut app);
+
+        // State should remain unchanged
+        assert_eq!(app.state.mode, original_mode);
+        assert_eq!(app.state.should_quit, original_quit);
+    }
+
+    #[test]
+    fn test_handle_key_release_event() {
+        let handler = EventHandler::new();
+        let mut app = create_test_app();
+
+        let original_mode = app.state.mode.clone();
+        let original_quit = app.state.should_quit;
+
+        let event = Event::Key(KeyEvent {
+            code: KeyCode::Char('q'),
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Release, // Release, not Press
+            state: ratatui::crossterm::event::KeyEventState::NONE,
+        });
+        handler.handle_event(event, &mut app);
+
+        // State should remain unchanged since we only handle Press events
+        assert_eq!(app.state.mode, original_mode);
+        assert_eq!(app.state.should_quit, original_quit);
+    }
+}

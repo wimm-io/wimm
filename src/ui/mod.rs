@@ -1,3 +1,16 @@
+//! Terminal user interface module for WIMM
+//!
+//! This module provides the complete terminal-based user interface for the WIMM task
+//! management application. It handles:
+//! - Task list rendering and formatting
+//! - Input processing and event handling
+//! - Help system and UI overlays
+//! - Date/time formatting and display
+//! - Task highlighting based on urgency and status
+//!
+//! The UI is built using the ratatui library and follows a component-based architecture
+//! with separate modules for different UI concerns.
+
 use chrono::{DateTime, Local};
 use ratatui::Frame;
 use ratatui::crossterm::event;
@@ -12,6 +25,11 @@ use thiserror::Error;
 use crate::storage::{self, Db};
 use crate::types::{AppState, Task};
 
+/// Format an optional timestamp for display in the UI
+///
+/// Converts an optional SystemTime to a human-readable string:
+/// - Some(time) -> relative time format (e.g., "2h ago", "in 3d")
+/// - None -> "-" to indicate no date set
 fn format_date(time: Option<SystemTime>) -> String {
     match time {
         Some(t) => format_time_relative(t),
@@ -19,10 +37,22 @@ fn format_date(time: Option<SystemTime>) -> String {
     }
 }
 
+/// Format a timestamp as relative time (e.g., "2h ago", "in 3d")
+///
+/// This function converts absolute timestamps to human-readable relative time
+/// strings, making it easier for users to understand when tasks are due or
+/// when they were created. Handles both past and future dates gracefully.
+///
+/// # Arguments
+/// * `time` - The timestamp to format
+///
+/// # Returns
+/// A string representation like "2d ago", "3h ago", "in 1d", or "now"
 fn format_time_relative(time: SystemTime) -> String {
     let now = SystemTime::now();
     match now.duration_since(time) {
         Ok(duration) => {
+            // Time is in the past
             let secs = duration.as_secs();
             let days = secs / 86400;
             let hours = (secs % 86400) / 3600;
@@ -39,7 +69,7 @@ fn format_time_relative(time: SystemTime) -> String {
             }
         }
         Err(_) => {
-            // Future date
+            // Time is in the future
             match time.duration_since(now) {
                 Ok(duration) => {
                     let secs = duration.as_secs();
@@ -63,6 +93,20 @@ fn format_time_relative(time: SystemTime) -> String {
     }
 }
 
+/// Format task creation timestamp for display
+///
+/// Uses a hybrid approach to balance usefulness and readability:
+/// - Recent tasks (< 24h): Show relative time ("2h ago", "30m ago")
+/// - Older tasks: Show absolute date ("2024-01-15")
+///
+/// This provides immediate context for recent activity while keeping
+/// older entries compact and dateable.
+///
+/// # Arguments
+/// * `time` - The creation timestamp to format
+///
+/// # Returns
+/// A formatted string suitable for display in the task list
 fn format_created_at(time: SystemTime) -> String {
     let now = SystemTime::now();
     let datetime = DateTime::<Local>::from(time);
@@ -92,6 +136,25 @@ fn format_created_at(time: SystemTime) -> String {
     }
 }
 
+/// Determine the visual style for a task based on its scheduling status
+///
+/// This function implements visual priority cues to help users quickly identify
+/// task urgency and scheduling states:
+///
+/// - **Deferred tasks**: Dimmed (dark gray) until defer date passes
+/// - **Overdue tasks**: Bold red text for immediate attention
+/// - **Due today**: Bold red text for high urgency
+/// - **Due within 24h**: Bold yellow text for moderate urgency
+/// - **Normal tasks**: Default styling
+///
+/// The styling follows a traffic light pattern (red = urgent, yellow = soon)
+/// with additional dimming for deferred items.
+///
+/// # Arguments
+/// * `task` - The task to determine styling for
+///
+/// # Returns
+/// A ratatui Style object with appropriate colors and modifiers
 fn get_task_highlight_style(task: &Task) -> Style {
     let now = SystemTime::now();
 
@@ -134,21 +197,36 @@ fn get_task_highlight_style(task: &Task) -> Style {
     }
 }
 
-mod app;
-mod events;
-mod help_panel;
+// Sub-modules providing specialized UI functionality
+pub mod app; // Core application state management and business logic
+pub mod events; // Keyboard input processing and event handling
+pub mod help_panel; // Help overlay system
 
-mod layout;
+pub mod layout; // Terminal layout management and responsive design
 
 use app::App;
 use events::EventHandler;
 use help_panel::HelpPanel;
 use layout::LayoutManager;
 
+/// Main UI coordinator combining all interface components
+///
+/// This struct orchestrates the various UI subsystems to provide a cohesive
+/// terminal interface. It combines:
+/// - App: Core application logic and state management
+/// - HelpPanel: Context-sensitive help system
+/// - LayoutManager: Responsive terminal layout
+/// - EventHandler: Input processing and command routing
+///
+/// The UI is generic over the database type to support different storage backends.
 pub struct Ui<D: Db> {
+    /// Core application state and business logic
     app: App<D>,
+    /// Help system for displaying contextual assistance
     help_panel: HelpPanel,
+    /// Terminal layout management for responsive design
     layout_manager: LayoutManager,
+    /// Input processing and event routing
     event_handler: EventHandler,
 }
 

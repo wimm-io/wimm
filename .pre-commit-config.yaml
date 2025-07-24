@@ -1,0 +1,189 @@
+# Pre-commit hooks configuration for Wimm Task Manager
+# ====================================================
+#
+# This configuration sets up automated checks that run before each commit
+# to ensure code quality and maintain test coverage standards.
+#
+# Installation:
+#   pip install pre-commit
+#   pre-commit install
+#
+# Manual run:
+#   pre-commit run --all-files
+
+repos:
+  # Rust-specific hooks
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
+    hooks:
+      # Check Rust formatting
+      - id: fmt
+        name: Rust Format Check
+        description: Check that Rust code is formatted with rustfmt
+        entry: cargo fmt --all -- --check
+        language: system
+        files: \.rs$
+        pass_filenames: false
+
+      # Run Clippy lints
+      - id: clippy
+        name: Rust Clippy
+        description: Run Clippy lints on Rust code
+        entry: cargo clippy --all-targets --all-features -- -D warnings
+        language: system
+        files: \.rs$
+        pass_filenames: false
+
+  # Local hooks for project-specific checks
+  - repo: local
+    hooks:
+      # Run all tests
+      - id: cargo-test
+        name: Cargo Test
+        description: Run all Rust tests
+        entry: cargo test --all-features
+        language: system
+        files: \.rs$
+        pass_filenames: false
+
+      # Coverage check with threshold enforcement
+      - id: coverage-check
+        name: Coverage Check
+        description: Ensure test coverage meets minimum threshold
+        entry: bash
+        args:
+          [
+            "-c",
+            'cargo tarpaulin --exclude-files "src/main.rs" --fail-under 60 --skip-clean || (echo "❌ Coverage below 60% threshold. Run make coverage-open to see details."; exit 1)',
+          ]
+        language: system
+        files: \.rs$
+        pass_filenames: false
+        verbose: true
+
+      # Security audit
+      - id: cargo-audit
+        name: Security Audit
+        description: Run security audit on dependencies
+        entry: bash
+        args:
+          [
+            "-c",
+            "command -v cargo-audit >/dev/null || cargo install cargo-audit; cargo audit",
+          ]
+        language: system
+        files: (Cargo\.(toml|lock)|\.rs)$
+        pass_filenames: false
+
+      # Check for TODO/FIXME comments in new code
+      - id: check-todos
+        name: Check TODOs
+        description: Warn about TODO/FIXME comments (informational)
+        entry: bash
+        args:
+          [
+            "-c",
+            'if grep -rn "TODO\|FIXME\|XXX\|HACK" src/ --include="*.rs"; then echo "⚠️  Found TODO/FIXME comments. Consider creating issues for them."; fi',
+          ]
+        language: system
+        files: \.rs$
+        pass_filenames: false
+        verbose: true
+        # Don't fail on TODOs, just warn
+        stages: [manual]
+
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      # Basic file checks
+      - id: trailing-whitespace
+        name: Trim Trailing Whitespace
+        description: Remove trailing whitespace
+
+      - id: end-of-file-fixer
+        name: Fix End of Files
+        description: Ensure files end with a newline
+
+      - id: check-yaml
+        name: Check YAML
+        description: Validate YAML files
+
+      - id: check-toml
+        name: Check TOML
+        description: Validate TOML files
+
+      - id: check-json
+        name: Check JSON
+        description: Validate JSON files
+
+      - id: check-merge-conflict
+        name: Check Merge Conflicts
+        description: Check for merge conflict markers
+
+      - id: check-case-conflict
+        name: Check Case Conflicts
+        description: Check for case-sensitive filename conflicts
+
+      - id: check-added-large-files
+        name: Check Large Files
+        description: Prevent adding large files (>500KB)
+        args: ["--maxkb=500"]
+
+      - id: mixed-line-ending
+        name: Check Line Endings
+        description: Check for mixed line endings
+
+  # Documentation checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-docstring-first
+        name: Check Docstring First
+        description: Check that docstrings come first
+
+  # Hooks that should run on push
+  - repo: local
+    hooks:
+      # More thorough checks for push
+      - id: full-coverage-report
+        name: Full Coverage Report
+        description: Generate full coverage report for push
+        entry: bash
+        args: ["-c", "./scripts/check-coverage.sh --threshold 60 || true"]
+        language: system
+        files: \.rs$
+        pass_filenames: false
+        stages: [push]
+
+# Configuration for specific stages
+default_stages: [commit]
+
+# Minimum pre-commit version
+minimum_pre_commit_version: "2.20.0"
+
+# Global configuration
+default_language_version:
+  python: python3
+
+# Exclude patterns
+exclude: |
+  (?x)^(
+    target/.*|
+    \.git/.*|
+    .*\.min\.js|
+    .*\.min\.css
+  )$
+
+# CI configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ""
+  autoupdate_commit_msg: "[pre-commit.ci] pre-commit autoupdate"
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false
