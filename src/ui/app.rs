@@ -160,6 +160,64 @@ impl<D: Db> App<D> {
     pub fn task_list_state(&mut self) -> &mut ListState {
         &mut self.task_list_state
     }
+
+    pub fn create_task_below_cursor(&mut self) {
+        let new_task = self.create_task("");
+        let cursor_index = self.task_list_state.selected().unwrap_or(0);
+        let insert_index = if self.state.tasks.is_empty() {
+            0
+        } else {
+            (cursor_index + 1).min(self.state.tasks.len())
+        };
+        self.state.tasks.insert(insert_index, new_task.clone());
+        self.state.editing_task = Some(new_task);
+        self.state.editing_field = 0;
+        self.task_list_state.select(Some(insert_index));
+    }
+
+    pub fn create_task_above_cursor(&mut self) {
+        let new_task = self.create_task("");
+        let cursor_index = self.task_list_state.selected().unwrap_or(0);
+        self.state.tasks.insert(cursor_index, new_task.clone());
+        self.state.editing_task = Some(new_task);
+        self.state.editing_field = 0;
+        self.task_list_state.select(Some(cursor_index));
+    }
+
+    pub fn save_editing_task(&mut self) -> Result<(), DbError> {
+        if let Some(editing_task) = &self.state.editing_task {
+            if let Some(selected_index) = self.task_list_state.selected() {
+                if selected_index < self.state.tasks.len() {
+                    self.state.tasks[selected_index] = editing_task.clone();
+                    self.sync_to_storage()?;
+                }
+            }
+        }
+        self.state.editing_task = None;
+        Ok(())
+    }
+
+    pub fn update_editing_task_field(&mut self, field_index: usize, value: String) {
+        if let Some(ref mut editing_task) = self.state.editing_task {
+            match field_index {
+                0 => editing_task.title = value,
+                1 => editing_task.description = value,
+                _ => {}
+            }
+        }
+    }
+
+    pub fn get_editing_task_field(&self, field_index: usize) -> String {
+        if let Some(ref editing_task) = self.state.editing_task {
+            match field_index {
+                0 => editing_task.title.clone(),
+                1 => editing_task.description.clone(),
+                _ => String::new(),
+            }
+        } else {
+            String::new()
+        }
+    }
 }
 
 pub enum SelectionIterator<'a> {

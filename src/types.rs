@@ -26,6 +26,8 @@ pub struct AppState<T: Db = MemoryStorage> {
     pub show_help: bool,
     pub tasks: Vec<Task>,
     pub store: T,
+    pub editing_task: Option<Task>,
+    pub editing_field: usize,
 }
 
 impl<T: Db> AppState<T> {
@@ -37,6 +39,8 @@ impl<T: Db> AppState<T> {
             show_help: false,
             tasks: Vec::new(),
             store,
+            editing_task: None,
+            editing_field: 0,
         }
     }
 }
@@ -50,6 +54,8 @@ impl Default for AppState {
             show_help: false,
             tasks: Vec::new(),
             store: MemoryStorage::new(HashMap::new()),
+            editing_task: None,
+            editing_field: 0,
         }
     }
 }
