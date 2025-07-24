@@ -254,16 +254,16 @@ GitHub Actions workflow includes:
 
 The CI includes optional integrations with external coverage services:
 
-- **Codecov**: Requires `CODECOV_TOKEN` repository secret
+- **Codecov**: Attempts upload if `CODECOV_TOKEN` is configured
 - **Coveralls**: Uses GitHub token (automatic)
 
 To enable Codecov:
 
 1. Sign up at [codecov.io](https://codecov.io)
 2. Add your repository
-3. Add `CODECOV_TOKEN` to GitHub repository secrets
+3. Add `CODECOV_TOKEN` to GitHub repository secrets in your repo settings
 
-These services are optional - CI will pass without them.
+These services are optional - CI will pass even if tokens are missing or uploads fail.
 
 ## 🚦 Quality Gates
 
