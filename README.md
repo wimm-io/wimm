@@ -16,6 +16,8 @@ A fast, efficient terminal-based task manager built in Rust with comprehensive t
 - **Task Management**: Create, edit, complete, and delete tasks with ease
 - **Visual Indicators**: Color-coded tasks based on due dates and status
 - **Help System**: Built-in help panel with keyboard shortcuts
+- **Customizable Configuration**: Color schemes, keymaps, and default settings
+- **CLI Interface**: Command-line configuration management and overrides
 
 ## 📋 Task Features
 
@@ -25,6 +27,9 @@ A fast, efficient terminal-based task manager built in Rust with comprehensive t
 - ✅ **Completion Tracking**: Mark tasks as complete/incomplete
 - 🏷️ **Task Selection**: Multi-select for batch operations
 - 📝 **Rich Descriptions**: Full descriptions with in-place editing
+- 🎨 **Themes**: Built-in color schemes (default, dark, light) and custom themes
+- ⌨️ **Keymaps**: Multiple keymap options (default, vi-style) and custom bindings
+- ⏰ **Time Defaults**: Configurable default hours for defer and due dates
 
 ## 🛠️ Installation
 
@@ -64,6 +69,58 @@ just dev
 # Start development with file watching
 just watch
 ```
+
+## ⚙️ Configuration
+
+WIMM supports extensive customization through CLI commands and configuration files.
+
+### Quick Configuration
+
+```bash
+# List available themes and keymaps
+wimm config list-colors
+wimm config list-keymaps
+
+# Set your preferences (key-value format)
+wimm config set color-scheme dark
+wimm config set keymap vi
+wimm config set defer-hour 8
+wimm config set due-hour 18
+
+# Or use flag format for multiple changes
+wimm config set --color-scheme dark --keymap vi --defer-hour 8 --due-hour 18
+
+# Show current configuration
+wimm config show
+
+# Reset to defaults
+wimm config reset
+```
+
+### Bulk Configuration Changes
+
+Set multiple configuration values at once:
+
+```bash
+# Use flag format for multiple changes
+wimm config set --color-scheme dark --defer-hour 8 --due-hour 18
+
+# Mix flag and key-value formats
+wimm config set timezone UTC --color-scheme light
+```
+
+### Built-in Themes
+
+- **default**: High-contrast black and white
+- **dark**: Modern dark theme with blue accents
+- **light**: Clean light theme
+
+### Built-in Keymaps
+
+- **default**: Standard TUI keybindings
+- **vi**: Vim-inspired navigation and commands
+
+See [`docs/configuration.md`](docs/configuration.md) for complete configuration documentation.
 
 ## 🎮 Usage
 
@@ -356,6 +413,7 @@ These services are optional - CI will pass even if tokens are missing or uploads
 
 - [`COVERAGE.md`](docs/COVERAGE.md) - Detailed coverage documentation
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) - System architecture overview
+- [`docs/configuration.md`](docs/configuration.md) - Complete configuration guide
 - [API Documentation](https://docs.rs/wimm) - Generated API docs
 
 ## 🐛 Troubleshooting

@@ -8,7 +8,11 @@
 //! - [`ui`] - Terminal user interface components and rendering
 //! - [`input`] - Input handling and event processing
 //! - [`time_tracking`] - Time tracking functionality (placeholder for future features)
+//! - [`config`] - Configuration management for colors, keymaps, and defaults
+//! - [`cli`] - Command-line interface and argument parsing
 
+pub mod cli;
+pub mod config;
 pub mod input;
 pub mod storage;
 pub mod time_tracking;

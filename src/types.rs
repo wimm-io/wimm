@@ -6,7 +6,10 @@
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, time::SystemTime};
 
-use crate::storage::{Db, MemoryStorage};
+use crate::{
+    config::Config,
+    storage::{Db, MemoryStorage},
+};
 
 /// Application input mode - determines how user input is interpreted
 ///
@@ -66,6 +69,8 @@ pub struct AppState<T: Db = MemoryStorage> {
     pub editing_task: Option<Task>,
     /// Index of the field being edited (0=title, 1=description, etc.)
     pub editing_field: usize,
+    /// Application configuration
+    pub config: Config,
 }
 
 impl<T: Db> AppState<T> {
@@ -83,6 +88,7 @@ impl<T: Db> AppState<T> {
             store,
             editing_task: None,
             editing_field: 0,
+            config: Config::default(),
         }
     }
 }
@@ -102,6 +108,7 @@ impl Default for AppState {
             store: MemoryStorage::new(HashMap::new()),
             editing_task: None,
             editing_field: 0,
+            config: Config::default(),
         }
     }
 }
@@ -221,6 +228,7 @@ mod tests {
         assert!(app_state.tasks.is_empty());
         assert!(app_state.editing_task.is_none());
         assert_eq!(app_state.editing_field, 0);
+        assert_eq!(app_state.config.colors.name, "default");
     }
 
     #[test]
@@ -234,6 +242,7 @@ mod tests {
         assert!(app_state.tasks.is_empty());
         assert!(app_state.editing_task.is_none());
         assert_eq!(app_state.editing_field, 0);
+        assert_eq!(app_state.config.colors.name, "default");
     }
 
     #[test]
