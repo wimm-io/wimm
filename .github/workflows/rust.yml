@@ -62,14 +62,18 @@ jobs:
             echo "✅ Coverage ${COVERAGE}% meets minimum threshold of ${MIN_COVERAGE}%"
           fi
 
+      # Optional: Upload coverage to external services
+      # These steps are optional and won't fail the CI if tokens are not configured
       - name: Upload coverage reports to Codecov
+        if: ${{ secrets.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v4
         with:
           file: ./cobertura.xml
           flags: unittests
           name: codecov-umbrella
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
+        continue-on-error: true
 
       - name: Upload coverage to Coveralls
         uses: coverallsapp/github-action@v2

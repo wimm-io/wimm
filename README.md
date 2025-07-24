@@ -250,6 +250,21 @@ GitHub Actions workflow includes:
 - ✅ MSRV compatibility check
 - ✅ Automatic coverage comments on PRs
 
+### Optional Coverage Services
+
+The CI includes optional integrations with external coverage services:
+
+- **Codecov**: Requires `CODECOV_TOKEN` repository secret
+- **Coveralls**: Uses GitHub token (automatic)
+
+To enable Codecov:
+
+1. Sign up at [codecov.io](https://codecov.io)
+2. Add your repository
+3. Add `CODECOV_TOKEN` to GitHub repository secrets
+
+These services are optional - CI will pass without them.
+
 ## 🚦 Quality Gates
 
 ### Pull Request Requirements
