@@ -30,7 +30,7 @@ A fast, efficient terminal-based task manager built in Rust with comprehensive t
 
 ### Prerequisites
 
-- Rust 1.70+ (MSRV)
+- Rust 1.74+ (MSRV)
 - A terminal emulator
 
 ### From Source
@@ -59,32 +59,32 @@ make watch
 
 ### Basic Navigation
 
-| Key | Action |
-|-----|---------|
-| `j`/`k` | Move up/down |
+| Key     | Action                |
+| ------- | --------------------- |
+| `j`/`k` | Move up/down          |
 | `g`/`G` | Go to first/last task |
-| `h` | Toggle help panel |
-| `q` | Quit |
+| `h`     | Toggle help panel     |
+| `q`     | Quit                  |
 
 ### Task Management
 
-| Key | Action |
-|-----|---------|
-| `o` | Create new task below |
-| `O` | Create new task above |
-| `i` | Edit current task |
+| Key | Action                 |
+| --- | ---------------------- |
+| `o` | Create new task below  |
+| `O` | Create new task above  |
+| `i` | Edit current task      |
 | `!` | Toggle task completion |
-| `x` | Toggle task selection |
-| `D` | Delete selected tasks |
+| `x` | Toggle task selection  |
+| `D` | Delete selected tasks  |
 
 ### Insert Mode
 
-| Key | Action |
-|-----|---------|
-| `Tab` | Next field (Title → Description → Due → Defer) |
-| `Shift+Tab` | Previous field |
-| `Enter` | Save and return to normal mode |
-| `Esc` | Cancel and return to normal mode |
+| Key         | Action                                         |
+| ----------- | ---------------------------------------------- |
+| `Tab`       | Next field (Title → Description → Due → Defer) |
+| `Shift+Tab` | Previous field                                 |
+| `Enter`     | Save and return to normal mode                 |
+| `Esc`       | Cancel and return to normal mode               |
 
 ### Date Input Examples
 
@@ -121,15 +121,15 @@ make dev
 
 ### Coverage Details
 
-| Module | Coverage | Status |
-|--------|----------|---------|
-| Storage | 92.30% | ✅ Excellent |
-| Types | 100% | ✅ Complete |
-| Time Tracking | 100% | ✅ Complete |
-| UI Events | 84.71% | ✅ Good |
-| Help Panel | 100% | ✅ Complete |
-| Layout | 100% | ✅ Complete |
-| **Overall** | **62.59%** | ✅ **Above 60% threshold** |
+| Module        | Coverage   | Status                     |
+| ------------- | ---------- | -------------------------- |
+| Storage       | 92.30%     | ✅ Excellent               |
+| Types         | 100%       | ✅ Complete                |
+| Time Tracking | 100%       | ✅ Complete                |
+| UI Events     | 84.71%     | ✅ Good                    |
+| Help Panel    | 100%       | ✅ Complete                |
+| Layout        | 100%       | ✅ Complete                |
+| **Overall**   | **62.59%** | ✅ **Above 60% threshold** |
 
 ### Test Types
 
@@ -193,11 +193,13 @@ wimm/
 ### Storage Backends
 
 #### Memory Storage
+
 - Fast in-memory storage
 - Perfect for testing and temporary use
 - No persistence between sessions
 
 #### Sled Storage
+
 - Persistent embedded database
 - Fast key-value storage
 - Automatic data recovery
@@ -215,6 +217,7 @@ pre-commit run --all-files
 ```
 
 Hooks include:
+
 - Rust formatting check
 - Clippy lints
 - Test execution
@@ -239,6 +242,7 @@ out = ["Html", "Xml", "Json"]
 ### CI/CD
 
 GitHub Actions workflow includes:
+
 - ✅ Automated testing on all PRs
 - ✅ Coverage enforcement (fails below 60%)
 - ✅ Code quality checks (rustfmt, clippy)
@@ -267,18 +271,21 @@ GitHub Actions workflow includes:
 ## 🤝 Contributing
 
 1. **Fork and Clone**
+
    ```bash
    git clone your-fork-url
    cd wimm
    ```
 
 2. **Set Up Development Environment**
+
    ```bash
    make install-tools
    pre-commit install
    ```
 
 3. **Make Changes**
+
    ```bash
    # Create feature branch
    git checkout -b feature/your-feature
@@ -326,18 +333,21 @@ GitHub Actions workflow includes:
 ### Common Issues
 
 **Coverage Below Threshold**
+
 ```bash
 make coverage-open  # View detailed HTML report
 # Add tests for red highlighted lines
 ```
 
 **Build Failures**
+
 ```bash
 cargo clean
 cargo build
 ```
 
 **Test Failures**
+
 ```bash
 cargo test -- --nocapture  # See test output
 ```
@@ -364,4 +374,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Made with ❤️ in Rust**
 
-*Keep your tasks organized, your mind clear, and your code covered!* 🧠✅
+_Keep your tasks organized, your mind clear, and your code covered!_ 🧠✅

@@ -2,7 +2,7 @@
 name = "wimm"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.70"
+rust-version = "1.74"
 license = "MIT"
 description = "WIMM (Where is my mind) - A terminal-based task management application"
 repository = "https://github.com/your-username/wimm"
