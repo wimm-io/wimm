@@ -52,9 +52,7 @@ fn main() {
     let config = match Config::load() {
         Ok(config) => config,
         Err(e) => {
-            eprintln!(
-                "Warning: Could not load configuration: {e}. Using defaults."
-            );
+            eprintln!("Warning: Could not load configuration: {e}. Using defaults.");
             Config::default()
         }
     };

@@ -151,9 +151,7 @@ impl TimeDefaults {
         Local
             .from_local_datetime(&datetime)
             .single()
-            .ok_or_else(|| {
-                ConfigError::InvalidTime("Could not create local datetime".to_string())
-            })
+            .ok_or_else(|| ConfigError::InvalidTime("Could not create local datetime".to_string()))
     }
 }
 
