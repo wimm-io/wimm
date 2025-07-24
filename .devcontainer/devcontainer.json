@@ -1,6 +1,6 @@
 {
-  "name": "Rust Dev",
-  "build": {
-    "dockerfile": "Dockerfile"
+  "image": "mcr.microsoft.com/devcontainers/rust:latest",
+  "features": {
+    "ghcr.io/devcontainers/features/sshd:1": {}
   }
 }
