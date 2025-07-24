@@ -15,13 +15,13 @@ Wimm is a terminal-based task management application built in Rust using the Rat
 ┌─────────────────────────▼───────────────────────────────────────┐
 │                      UI Layer (ui/)                             │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │
-│  │    App      │  │   Events    │  │   Layout    │              │
+│  │     Ui      │  │   Events    │  │   Layout    │              │
 │  │ Controller  │  │   Handler   │  │   Manager   │              │
 │  └─────────────┘  └─────────────┘  └─────────────┘              │
 │                                                                 │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │
-│  │  Task List  │  │ Input Bar   │  │ Help Panel  │              │
-│  │   Widget    │  │   Widget    │  │   Widget    │              │
+│  │     App     │  │ Input Bar   │  │ Help Panel  │              │
+│  │ Controller  │  │   Widget    │  │   Widget    │              │
 │  └─────────────┘  └─────────────┘  └─────────────┘              │
 └─────────────────────────┬───────────────────────────────────────┘
                           │
@@ -56,114 +56,132 @@ Wimm is a terminal-based task management application built in Rust using the Rat
 - Application bootstrapping and initialization
 - Database path resolution using `directories` crate
 - Error handling and application lifecycle management
+- Initial task loading with fallback error handling
 
 **Key Components:**
 
-- Project directory resolution
-- Database initialization
-- UI startup and error handling
+- Project directory resolution with fallback to current directory
+- Database initialization with proper error handling
+- UI startup with graceful error recovery
+- Initial task loading with empty state fallback
 
 ### 2. UI Layer (`ui/`)
 
-The UI layer implements the Model-View-Controller pattern with widget-based rendering.
+The UI layer implements a centralized rendering approach with integrated task list management.
 
 #### Core Components:
 
-**`App` (Controller)**
+**`Ui` (Main Controller)**
 
-- Manages application state
-- Handles business logic operations (add, delete, toggle tasks)
-- Coordinates between UI and storage layers
+- Orchestrates all UI components and rendering
+- Manages the main application loop
+- Handles terminal initialization and cleanup
+- Integrates task list rendering directly (not as separate widget)
+- Coordinates between App controller and UI widgets
+
+**`App` (Application Controller)**
+
+- Manages application state and business logic operations
+- Handles task operations (add, delete, toggle completion)
+- Manages task selection state with multi-select support
+- Coordinates storage synchronization
 - Manages input buffer and mode transitions
+- Provides cursor navigation for task list
 
 **`EventHandler`**
 
 - Processes keyboard input events
 - Routes events based on current mode (Normal/Insert)
 - Translates key presses into application actions
+- Handles both single-key and character input
 
 **`LayoutManager`**
 
-- Calculates screen layout areas
-- Handles floating panel positioning
+- Calculates screen layout areas with vertical constraints
+- Handles floating panel positioning for help overlay
 - Manages responsive layout adjustments
+- Provides structured layout areas for consistent rendering
 
 #### UI Widgets:
 
-**`TaskList`**
-
-- Renders task items with completion status
-- Manages selection state
-- Handles navigation (up/down, first/last)
-
 **`InputBar`**
 
-- Displays input prompt in Insert mode
+- Displays input prompt in Insert mode with real-time feedback
 - Shows error messages in Normal mode
-- Handles real-time input display
+- Handles mode-specific rendering and content display
 
 **`HelpPanel`**
 
-- Renders floating help overlay
-- Provides contextual help content
-- Manages help visibility state
+- Renders floating help overlay with keyboard shortcuts
+- Provides contextual help content with styling
+- Manages floating panel positioning and background clearing
+- Uses styled text with colors and formatting
 
 ### 3. Business Logic Layer
 
 **`Types` (Core Types)**
 
 - Defines core data structures (`Task`, `AppState`, `Mode`)
-- Provides serialization/deserialization capabilities
-- Manages application state transitions
+- Provides serialization/deserialization capabilities with Serde
+- Manages application state transitions and defaults
+- Supports generic storage backend through type parameters
 
 **`TaskManager` (Placeholder)**
 
-- Future implementation for task business logic
+- Future implementation for advanced task business logic
 - Will handle task creation, updates, and queries
-- Planned for future development
+- Planned for complex task operations and filtering
 
 **`TimeTracker` (Placeholder)**
 
-- Future implementation for time tracking
+- Future implementation for time tracking with `TimeEntry` structure
 - Will manage timer state and duration calculations
-- Planned for future development
+- Includes start/stop timer functionality design
 
 **`InputHandler` (Placeholder)**
 
 - Future implementation for advanced input handling
-- Will process complex input scenarios
-- Planned for future development
+- Will process complex input scenarios and commands
 
 ### 4. Storage Layer (`storage/`)
 
-The storage layer implements a trait-based abstraction for data persistence.
+The storage layer implements a trait-based abstraction for data persistence with comprehensive error handling.
 
 **`Db` Trait**
 
-- Defines storage contract with four operations:
-  - `load_tasks()` - Retrieve all tasks
-  - `save_task()` - Persist a single task
-  - `delete_task()` - Remove a task by ID
-  - `clear()` - Remove all tasks
+- Defines storage contract with four core operations:
+  - `load_tasks()` - Retrieve all tasks as vector
+  - `save_task()` - Persist a single task by ID
+  - `delete_task()` - Remove a task by ID with validation
+  - `clear()` - Remove all tasks atomically
 
 **`SledStorage` (Production)**
 
 - Implements persistent storage using Sled embedded database
 - Provides ACID transactions and crash recovery
-- Handles serialization/deserialization with JSON
+- Handles JSON serialization/deserialization with error mapping
+- Uses path-based initialization with connection error handling
 
 **`MemoryStorage` (Testing/Development)**
 
 - Implements in-memory storage using HashMap
 - Provides fast access for testing scenarios
 - No persistence across application restarts
+- Suitable for development and testing workflows
+
+**`DbError` (Error Handling)**
+
+- Comprehensive error enum using `thiserror`
+- Covers connection, serialization, not found, and operation errors
+- Automatic conversion from `serde_json::Error`
+- Provides detailed error messages for debugging
 
 ## Data Flow
 
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
 │   User      │    │    UI       │    │    App      │    │   Storage   │
-│   Input     │    │   Events    │    │ Controller  │    │   Layer     │
+│   Input     │    │ Controller  │    │ Controller  │    │   Layer     │
 └──────┬──────┘    └──────┬──────┘    └──────┬──────┘    └──────┬──────┘
        │                  │                  │                  │
        │ Key Press        │                  │                  │
@@ -200,28 +218,39 @@ pub trait Db {
 
 **Guarantees:**
 
-- All operations return `Result` types for error handling
+- All operations return `Result` types for comprehensive error handling
 - `load_tasks()` returns empty vector if no tasks exist
 - `save_task()` overwrites existing tasks with same ID
 - `delete_task()` returns `NotFound` error if task doesn't exist
-- `clear()` removes all tasks atomically
+- `clear()` removes all tasks atomically with transaction safety
 
 ### UI Component Contracts
 
 **Event Handler Contract:**
 
 ```rust
-pub fn handle_event<D: Db>(&self, event: Event, app: &mut App<D>, task_list: &mut TaskList)
+pub fn handle_event<D: Db>(&self, event: Event, app: &mut App<D>)
 ```
 
 - Processes single event atomically
 - Updates application state through app controller
-- Manages UI widget state (task list selection)
+- No direct widget state management (integrated into Ui controller)
+
+**Main UI Render Contract:**
+
+```rust
+pub fn run(&mut self) -> Result<(), UiError>
+```
+
+- Manages complete application lifecycle
+- Handles terminal initialization and cleanup
+- Processes event loop until quit signal
+- Provides comprehensive error handling
 
 **Widget Render Contract:**
 
 ```rust
-pub fn render<D: Db>(&mut self, f: &mut Frame, area: Rect, app_state: &AppState<D>)
+pub fn render<D: Db>(&self, f: &mut Frame, area: Rect, app: &App<D>)
 ```
 
 - Renders widget within provided area
@@ -236,12 +265,22 @@ pub fn render<D: Db>(&mut self, f: &mut Frame, area: Rect, app_state: &AppState<
 - Maintains single source of truth for application state
 - Provides immutable access to UI layer
 - Manages mode transitions and input buffer
+- Defaults to `MemoryStorage` for testing convenience
+
+**`App<T: Db>`:**
+
+- Manages business logic and task operations
+- Handles task selection with multi-select support
+- Provides cursor navigation and selection iteration
+- Synchronizes state changes with storage backend
+- Manages error state and user feedback
 
 **State Transitions:**
 
 - Normal ↔ Insert mode transitions
 - Help panel visibility toggle
-- Task selection state management
+- Task selection state management with multi-select
+- Cursor navigation with boundary handling
 
 ## Error Handling Strategy
 
@@ -263,20 +302,25 @@ pub enum UiError {
 
 ### Error Propagation
 
-1. **Storage Layer**: Returns `DbError` for all operations
-2. **Business Logic**: Propagates storage errors, adds validation errors
-3. **UI Layer**: Converts errors to user-friendly messages
-4. **Application**: Handles fatal errors with graceful shutdown
+1. **Storage Layer**: Returns `DbError` for all operations with detailed messages
+2. **Business Logic**: Propagates storage errors, manages operation failures
+3. **UI Layer**: Converts errors to user-friendly messages via App controller
+4. **Application**: Handles fatal errors with graceful shutdown and fallback states
 
 ## Configuration and Dependencies
 
 ### External Dependencies
 
-- **Ratatui**: Terminal UI framework
-- **Sled**: Embedded database
-- **Serde**: Serialization framework
-- **UUID**: Unique identifier generation
-- **Directories**: Cross-platform directory resolution
+```toml
+[dependencies]
+directories = "6.0"          # Cross-platform directory resolution
+ratatui = "0.29"             # Terminal UI framework
+serde = { version = "1.0", features = ["derive"] }  # Serialization
+serde_json = "1.0"           # JSON serialization
+sled = "0.34"                # Embedded database
+thiserror = "2.0"            # Error handling
+uuid = { version = "1.17.0", features = ["v4"] }    # Unique identifiers
+```
 
 ### Build Configuration
 
@@ -287,6 +331,29 @@ version = "0.1.0"
 edition = "2024"
 ```
 
+## Task Selection and Navigation
+
+### Selection System
+
+The application supports both single cursor navigation and multi-task selection:
+
+- **Cursor Navigation**: `j/k` for up/down, `g/G` for first/last
+- **Multi-Selection**: `x` to toggle individual task selection
+- **Operations**: Work on either cursor position or selected tasks
+- **Visual Feedback**: Selected tasks highlighted with different background
+
+### Selection Iterator
+
+```rust
+pub enum SelectionIterator<'a> {
+    Multiple(std::collections::hash_set::Iter<'a, usize>),
+    Single(std::iter::Once<usize>),
+    Empty,
+}
+```
+
+Provides unified interface for operating on single or multiple tasks.
+
 ## Future Architecture Considerations
 
 ### Planned Enhancements
@@ -294,48 +361,48 @@ edition = "2024"
 1. **Task Manager Implementation**
    - Rich task operations (search, filter, sort)
    - Task categorization and tagging
-   - Bulk operations
+   - Bulk operations and batch processing
 
 2. **Time Tracking System**
-   - Active timer management
-   - Time entry persistence
-   - Reporting and analytics
+   - Active timer management with `TimeEntry`
+   - Time entry persistence and history
+   - Reporting and analytics dashboard
 
 3. **Advanced Input Handling**
    - Vim-like command mode
-   - Multi-key shortcuts
-   - Customizable keybindings
+   - Multi-key shortcuts and keybinding customization
+   - Command history and autocompletion
 
-4. **Plugin Architecture**
-   - External integrations (GitHub, Jira)
-   - Custom storage backends
-   - Theme system
+4. **Enhanced UI Components**
+   - Separate TaskList widget implementation
+   - Theme system and color customization
+   - Modal dialogs and confirmation prompts
 
 ### Scalability Considerations
 
-- **Database Performance**: Sled provides excellent performance for single-user scenarios
-- **Memory Usage**: In-memory task list scales well to thousands of tasks
-- **UI Responsiveness**: Event-driven architecture ensures smooth interactions
-- **Storage Growth**: Automatic cleanup and archiving for completed tasks
+- **Database Performance**: Sled provides excellent performance for single-user scenarios up to millions of records
+- **Memory Usage**: In-memory task list scales well to thousands of tasks with minimal overhead
+- **UI Responsiveness**: Event-driven architecture ensures smooth interactions even with large datasets
+- **Storage Growth**: Future automatic cleanup and archiving for completed tasks
 
 ## Testing Strategy
 
 ### Unit Testing
 
-- Storage implementations with trait-based mocking
-- Business logic with dependency injection
-- UI components with state simulation
+- Storage implementations with trait-based mocking and dependency injection
+- Business logic testing with controlled storage backends
+- UI component testing with state simulation and event mocking
 
 ### Integration Testing
 
-- End-to-end user workflows
-- Storage persistence verification
-- Error scenario handling
+- End-to-end user workflow simulation
+- Storage persistence verification across application restarts
+- Error scenario handling and recovery testing
 
 ### Performance Testing
 
-- Large task list rendering
-- Database operation benchmarks
-- Memory usage profiling
+- Large task list rendering and navigation performance
+- Database operation benchmarks with varying data sizes
+- Memory usage profiling under different workloads
 
-This architecture provides a solid foundation for a task management application while maintaining flexibility for future enhancements and extensions.
+This architecture provides a solid foundation for a task management application while maintaining flexibility for future enhancements and extensions. The current implementation focuses on core functionality with a clean separation of concerns, enabling easy extension and modification.
