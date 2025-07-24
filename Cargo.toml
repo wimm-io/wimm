@@ -1,7 +1,8 @@
 [package]
 name = "wimm"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+rust-version = "1.70"
 license = "MIT"
 description = "WIMM (Where is my mind) - A terminal-based task management application"
 repository = "https://github.com/your-username/wimm"
@@ -16,7 +17,7 @@ ratatui = "0.29"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sled = "0.34"
-thiserror = "2.0"
+thiserror = "1.0"
 uuid = { version = "1.17.0", features = ["v4"] }
 
 [dev-dependencies]
