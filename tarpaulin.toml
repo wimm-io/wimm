@@ -6,7 +6,7 @@ out = ["Html", "Xml", "Json"]
 fail-under = 60
 
 # Timeout for tests (in seconds)
-timeout = 120
+timeout = "120s"
 
 [build]
 # Include all features when running coverage
@@ -44,7 +44,7 @@ run-types = ["Tests", "Doctests"]
 
 [engine]
 # Use LLVM for more accurate coverage
-engine = "llvm"
+engine = "Llvm"
 
 # Follow symbolic links
 follow-links = true

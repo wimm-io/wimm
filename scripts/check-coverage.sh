@@ -188,10 +188,15 @@ check_coverage_threshold() {
 
     # Extract coverage percentage from the output
     if [[ -f "$REPORT_FILE" ]]; then
-        COVERAGE=$(grep -oP '\d+\.\d+(?=% coverage)' "$REPORT_FILE" | head -1)
+        # Look for tarpaulin's standard output format: "XX.XX% coverage"
+        COVERAGE=$(grep -o '[0-9]*\.[0-9]*% coverage' "$REPORT_FILE" | sed 's/% coverage//' | head -1)
+        if [[ -z "$COVERAGE" ]]; then
+            # Fallback: try different format
+            COVERAGE=$(grep 'coverage' "$REPORT_FILE" | grep -o '[0-9]*\.[0-9]*' | head -1)
+        fi
     else
         # Fallback: run tarpaulin just to get summary
-        COVERAGE=$(cargo tarpaulin --print-summary --exclude-files "src/main.rs" 2>/dev/null | grep -oP '\d+\.\d+(?=% coverage)' | head -1 || echo "0")
+        COVERAGE=$(cargo tarpaulin --print-summary --exclude-files "src/main.rs" 2>/dev/null | grep -o '[0-9]*\.[0-9]*% coverage' | sed 's/% coverage//' | head -1 || echo "0")
     fi
 
     if [[ -z "$COVERAGE" ]]; then
@@ -266,7 +271,7 @@ show_coverage_breakdown() {
         else
             # Fallback: show basic file list from XML
             if [[ -f "cobertura.xml" ]] && command -v grep &> /dev/null; then
-                grep -oP 'filename="\K[^"]*' cobertura.xml | head -10
+                grep 'filename=' cobertura.xml | sed 's/.*filename="//; s/".*//' | head -10
             fi
         fi
         echo ""
